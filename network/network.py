@@ -9,7 +9,7 @@ import os
 print(__name__)
 from .node import Node
 from .link import Directed_link
-from ..dynamics import expanded_network
+from ..dynamics import expanded_network, Boolean_simulation
 from ..topology_analysis import feedback_analysis
 from ..support_functions import folder_functions
 
@@ -136,6 +136,25 @@ class Network_model:
         else:
             networkmodel_expanded.make_network_folder(self.s_address_net_folder)
         return networkmodel_expanded
+    
+    def get_basin_attractor_under_perturbation_Boolean_synchronous_update(self, lt_s_node_i_perturbation=None, b_make_output_in_onefile=False):
+        """lt_s_node_i_perturbatopm == [(s_nodename, i_perturbed_states), , ,]
+        before doing this function, define input nodes"""
+        if not lt_s_node_i_perturbation:
+            lt_s_node_i_perturbation = []
+            
+        if self.show_address_of_network_folder() == "Not yet maden":
+            raise ValueError("before doing 'get_basin_attractor_under_perturbation_Boolean_synchronous_update' method, make the folder")
+            
+        ls_inputnodenames, ls_not_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo = Boolean_simulation.extract_dynamics_information_from_network(self)
+        Boolean_simulation.basin_calculation_for_specific_perturbation(ls_inputnodenames, 
+                                                                       ls_not_inputnodenames, 
+                                                                       dic_nodename_i_truthtable, 
+                                                                       dic_nodename_array_regulatorinfo, 
+                                                                       lt_s_node_i_perturbation, 
+                                                                       self.show_address_of_network_folder(), 
+                                                                       b_make_output_in_onefile)
+        
 
 
 class Expanded_network(Network_model):

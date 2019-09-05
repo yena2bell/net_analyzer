@@ -32,6 +32,8 @@ def Boolean_function(i_logic, t_b_inputs):
 
     (1,0,1) has output value in (1+4)+1th line
     i_logic is sum of ai*(2^i)
+    
+    if t_b_inputs == [],  Boolean_function(0,[]) == False,  Boolean_function(1,[]) == True. 
     """
     
     #check the range of iLogic
@@ -164,7 +166,7 @@ def parse_minimized_Boolean_logic_equation_to_list(s_logic_equation):
     return l_stack
 
 
-def make_multidim_Boolean_function_array(i_logic, i_numofinputs):
+def make_multidim_Boolean_function_array(i_logic, i_numofinputs):#I can't remember why I made it
     """make i_numofinputs dimensional array
     array[(i1,i2,i3...)] == Boolean_function(i_logic, (i1,i2,i3,...))
     that array has Boolean value"""
