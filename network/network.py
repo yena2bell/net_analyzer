@@ -4,11 +4,14 @@ Created on Thu Aug 29 17:14:06 2019
 
 @author: jwKim
 """
+import os
+
 print(__name__)
 from .node import Node
 from .link import Directed_link
 from ..dynamics import expanded_network
 from ..topology_analysis import feedback_analysis
+from ..support_functions import folder_functions
 
 class Network_model:
     def __init__(self,s_netname):
@@ -19,13 +22,16 @@ class Network_model:
         self.l_sourcenodes = []
         self.l_sinknodes = []
         
+        self.s_address_net_folder = "Not yet maden"
+        
     def __repr__(self):
         return self.s_netname
     
     def read_network_structure(self, s_network_structure):
         pass
     
-    def save_network_data(self, s_address_savefolder):
+    def save_network_data(self):
+        #save data in self.s_address_net_folder
         pass
     
     def show_nodenames(self):
@@ -33,6 +39,23 @@ class Network_model:
     
     def show_node(self):
         return self.l_nodes
+    
+    def show_input_nodes(self):
+        return [node for node in self.l_nodes if node.is_input_node()]
+    
+    def show_not_input_nodes(self):
+        return [node for node in self.l_nodes if not node.is_input_node()]
+    
+    def show_output_nodes(self):
+        return [node for node in self.l_nodes if node.is_output_node()]
+    
+    def show_address_of_network_folder(self):
+        return self.s_address_net_folder
+    
+    def make_network_folder(self, s_address):
+        """make new folder named self.s_netname in the s_address folder"""
+        self.s_address_net_folder = os.path.join(s_address,self.s_netname)
+        folder_functions.directory_making(self.s_address_net_folder)
     
     def show_links_list_of_tuple(self):
         """return list of tuple such that (start node name, end node name)"""
@@ -107,9 +130,13 @@ class Network_model:
         node_start.add_outwardlink(directed_link_new)
         
     def make_expanded_network(self):#not yet completed
-        networkmodel_expanded = Network_model("expanded_network_of_"+self.s_netname)
+        networkmodel_expanded = expanded_network.make_expanded_network_using_Boolean_truthtable(self)
+        if self.s_address_net_folder == "Not yet maden":
+            pass
+        else:
+            networkmodel_expanded.make_network_folder(self.s_address_net_folder)
         return networkmodel_expanded
-        
+
 
 class Expanded_network(Network_model):
     def find_stable_motifs_using_expanded_net(self):

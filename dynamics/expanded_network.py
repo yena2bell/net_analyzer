@@ -70,7 +70,7 @@ def get_minimized_Boolean_function_node_using_QM(networkmodel, node_of_expandedm
         raise ValueError("incorrect suffix to the expanded network node!")
 
     #s_logic_equation is like '((NOT B) OR (NOT A))' or '((a AND b) OR c)' or  '(a AND b AND c)' ....
-    print(l_logic_equation)
+    #print(l_logic_equation)
     return l_logic_equation
 
 def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expanded, node_of_expandedmodel, l_logic_equation):
@@ -213,6 +213,7 @@ def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
             i_combination = calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
         
     
+    #check whether stable module containing and node is superset of stable motif without andnode
     ll_stable_motif_containing_andnode=[]
     for set_stable_motif_containing_andnodes in lset_stable_motif_contatining_andnodes:
         for l_stable_motif_no_andnode in ll_stable_motif:
@@ -221,9 +222,10 @@ def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
         else:
             ll_stable_motif_containing_andnode.append(list(set_stable_motif_containing_andnodes))
     
+    #delete duplications
     for i, l_motif_containing_andnode in enumerate(ll_stable_motif_containing_andnode):
         for j in range(len(ll_stable_motif_containing_andnode)-1,i,-1):
-            if l_motif_containing_andnode == ll_stable_motif_containing_andnode[j]:
+            if set(l_motif_containing_andnode) == set(ll_stable_motif_containing_andnode[j]):
                 ll_stable_motif_containing_andnode.pop(j)
         
     return ll_stable_motif+ll_stable_motif_containing_andnode

@@ -16,6 +16,8 @@ class Node:
         self.tmp = None
         self.dynamics_l_l_order_i_truthtable = None #[[input node1, input node2, ,,,],i_number_making_Boolean_truth_table]
         self.dynamics_s_logicequation = None
+        self.Bool_inputnode = False
+        self.Bool_outputnode = False
         
     def __repr__(self):
         return self.s_name
@@ -66,7 +68,22 @@ class Node:
     def show_inwardlinks(self):
         return self.l_inwardlinks
     
+    def mark_input_node(self):
+        self.Bool_inputnode = True
+    
+    def cancel_input_node(self):
+        self.Bool_inputnode = False
+    
+    def is_input_node(self):
+        return self.Bool_inputnode
+    
+    def mark_output_node(self):
+        self.Bool_outputnode = True
+        
+    def cancel_output_node(self):
+        self.Bool_outputnode = False
 
-            
+    def is_output_node(self):
+        return self.Bool_outputnode            
             
             
