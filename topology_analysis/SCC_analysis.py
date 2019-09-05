@@ -123,3 +123,47 @@ def is_SCC1_over_SCC2(SCC1, SCC2):
             if link.output_end() in SCC2:
                 return True
     return False
+
+
+def net_of_SCCs(ll_SCC, lt_links):
+    """
+    llSCC = [[node1,node2,node3... nodes in the SCC1],[node6,node7.... nodes in the SCC2],....]
+    ltLinks_data = [(node1, node2), (node1, node3)...]
+    give each SCC the number as llSCC.index
+    calculate interactions between SCCs.
+    return the list [(SCC1's number,SCC2's number),...] this means that link connecting SCC1 -> SCC2 exists
+    """
+    l_remained_links = list(lt_links)
+    lt_SCClinks = []
+    
+    for i_lSCC in enumerate(ll_SCC):
+        for i in range(len(l_remained_links)-1,-1,-1):
+            if l_remained_links[i][0] in i_lSCC[1]:
+                if l_remained_links[i][1] in i_lSCC[1]:
+                    l_remained_links.pop(i)
+                else:
+                    t_tmplink = l_remained_links.pop(i)
+                    t_SCClink = (i_lSCC[0],node_position_finding(ll_SCC, t_tmplink[1]))
+                    lt_SCClinks.append(t_SCClink)
+            elif l_remained_links[i][1] in i_lSCC[1]:
+                t_tmplink = l_remained_links.pop(i)
+                t_SCClink = (node_position_finding(ll_SCC, t_tmplink[0]), i_lSCC[0])
+                lt_SCClinks.append(t_SCClink)
+
+    lt_SCClinks = list(set(lt_SCClinks))
+
+    return(lt_SCClinks)
+    
+    
+def node_position_finding(llSCC, s_node):
+    """
+    sub function of 'net_of_SCCs'
+    llSCC = [[node1,node2,node3... nodes in the SCC1],[node6,node7.... nodes in the SCC2],....]
+    s_node is node name
+    """
+    for i_lSCC in enumerate(llSCC):
+        if s_node in i_lSCC[1]:
+            return(i_lSCC[0])
+    else:
+        print("error")
+        return

@@ -68,3 +68,31 @@ def extract_subnet_topology(lt_links, ls_nodes_sub):
             lt_links_sub.append(copy.deepcopy(t_link))
     
     return lt_links_sub
+
+def show_connected_components(ls_nodes, lt_links):
+    ls_nodes_copy = ls_nodes.copy()
+    l_stack = []
+    lt_links_copy = lt_links.copy()
+    lset_components = []
+    
+    while ls_nodes_copy:
+        s_node = ls_nodes_copy.pop()
+        set_component = set([])
+        l_stack.append(s_node)
+        while l_stack:
+            s_node = l_stack.pop()
+            set_component.add(s_node)
+            for i in range(len(lt_links_copy)-1,-1,-1):
+                if (lt_links_copy[i][0] == s_node):
+                    t_link = lt_links_copy.pop(i)
+                    if t_link[1] in ls_nodes_copy:
+                        l_stack.append(ls_nodes_copy.pop(ls_nodes_copy.index(t_link[1])))
+                elif (lt_links_copy[i][1] == s_node):
+                    t_link = lt_links_copy.pop(i)
+                    if t_link[0] in ls_nodes_copy:
+                        l_stack.append(ls_nodes_copy.pop(ls_nodes_copy.index(t_link[0])))
+        lset_components.append(set_component)
+    
+    return lset_components
+        
+        

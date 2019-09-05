@@ -10,8 +10,9 @@ print(__name__)
 from .node import Node
 from .link import Directed_link
 from ..dynamics import expanded_network, Boolean_simulation
-from ..topology_analysis import feedback_analysis
+from ..topology_analysis import feedback_analysis, basic_topology_functions,SCC_analysis
 from ..support_functions import folder_functions
+from . import network_generation
 
 class Network_model:
     def __init__(self,s_netname):
@@ -34,6 +35,19 @@ class Network_model:
         #save data in self.s_address_net_folder
         pass
     
+    def add_nodes_edges_from_list_form(self, ls_nodenames, lt_edges):
+        for s_node in ls_nodenames:
+            self.add_node(s_node)
+        for t_edge in lt_edges:
+            self.add_directed_link(t_edge[0],t_edge[1])
+    
+    def add_nodes_edges_random_scale_free_connected(self, i_node_num, i_parameter=2):
+        while True:
+            ls_nodes, lt_edges = network_generation.gen_network_scale_free_out(i_node_num, i_parameter)
+            if len(basic_topology_functions.show_connected_components(ls_nodes, lt_edges)) ==1:#connected network
+                break
+        self.add_nodes_edges_from_list_form(ls_nodes, lt_edges)
+    
     def show_nodenames(self):
         return [str(node) for node in self.l_nodes]
     
@@ -51,6 +65,12 @@ class Network_model:
     
     def show_address_of_network_folder(self):
         return self.s_address_net_folder
+    
+    def show_SCC_decomposition(self):
+        ll_SCC = SCC_analysis.decompose_SCC(self.show_nodenames(), self.show_links_list_of_tuple())
+        lt_SCC_hierarchy = SCC_analysis.net_of_SCCs(ll_SCC, self.show_links_list_of_tuple())
+        dic_code_lSCC = dict(zip(range(len(ll_SCC)),ll_SCC))
+        return dic_code_lSCC, lt_SCC_hierarchy
     
     def make_network_folder(self, s_address):
         """make new folder named self.s_netname in the s_address folder"""
@@ -136,6 +156,13 @@ class Network_model:
         else:
             networkmodel_expanded.make_network_folder(self.s_address_net_folder)
         return networkmodel_expanded
+    
+    def make_subnetwork(self, l_nodes_subnetwork):
+        lt_links_sub = basic_topology_functions.extract_subnet_topology(self.show_links_list_of_tuple(), l_nodes_subnetwork)
+        net_sub = Network_model("subnet_of_"+str(self))
+        net_sub.add_nodes_edges_from_list_form(l_nodes_subnetwork, lt_links_sub)
+        
+        return net_sub
     
     def get_basin_attractor_under_perturbation_Boolean_synchronous_update(self, lt_s_node_i_perturbation=None, b_make_output_in_onefile=False):
         """lt_s_node_i_perturbatopm == [(s_nodename, i_perturbed_states), , ,]
