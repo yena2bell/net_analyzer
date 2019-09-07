@@ -158,20 +158,26 @@ def basin_calculation_for_specific_perturbation(ls_inputnodenames,
     else:
         for i_inputcondition in dic_i_inputcondition_l_integerformsets.keys():
             if i_inputcondition == -1:
-                s_filename = "att_basin_perturbed.tsv"
+                s_filename_basin = "att_basin_perturbed.tsv"
+                s_filename_atts = "attractor_information.txt"
                 array_input_state = np.array([])
             else:
-                s_filename = "att_basin_perturbed_on_input_condition_{}.tsv".format(i_inputcondition)
+                s_filename_basin = "att_basin_perturbed_on_input_condition_{}.tsv".format(i_inputcondition)
+                s_filename_atts = "attractor_information_on_input_condition_{}.txt".format(i_inputcondition)
                 array_input_state = DSM.int_to_arraystate(i_inputcondition, len(ls_inputnodenames))
                 
-            s_address = os.path.join(s_address_folder_output, s_filename)
-            write_output_header(s_address, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
+            s_address_basin = os.path.join(s_address_folder_output, s_filename_basin)
+            s_address_atts = os.path.join(s_address_folder_output, s_filename_atts)
+            ll_atts = []
+            write_output_header(s_address_basin, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
             for i_code, ifs_basin in enumerate(dic_i_inputcondition_l_integerformsets[i_inputcondition]):
                 l_i_state_att = dic_i_inputcondition_l_l_att[i_inputcondition][i_code]
                 l_atts = [DSM.int_to_arraystate(i_state, len(ls_inputnodenames)+len(ls_not_inputnodenames)) for i_state in l_i_state_att]
+                ll_atts.append(l_atts)
                 l_states_in_basin = [np.concatenate([array_input_state,DSM.int_to_arraystate(i_state, len(matrix_converter)) @ matrix_converter + array_perturbed_state]) for i_state in ifs_basin.show_list_form()]
                                 
-                write_output_one_basin_one_att(s_address, i_code, l_atts, l_states_in_basin)
+                write_output_one_basin_one_att(s_address_basin, i_code, l_atts, l_states_in_basin)
+            write_attractor_information(s_address_atts, ll_atts, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
         
 
 def basin_calculation_for_specific_inputcondition_and_perturbation(ls_inputnodenames, 
@@ -334,5 +340,62 @@ def write_output_one_basin_one_att(s_address, i_code, l_atts, l_states_in_basin)
             for i in array_state:
                 file_output.write('\t')
                 file_output.write(str(int(i)))
-            
+                
+def write_attractor_information(s_address, ll_atts, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed):
+    with open(s_address, 'w') as file_att:
+        file_att.write("the number of attractors: ")
+        file_att.write(str(len(ll_atts)))
+        file_att.write('\n')
+        
+        ll_pointatt = []
+        ll_cyclicatt = []
+        for l_att in ll_atts:
+            if len(l_att) == 1:
+                ll_pointatt.append(l_att)
+            else:
+                ll_cyclicatt.append(l_att)
+        
+        file_att.write("the numbor of point attractors: ")
+        file_att.write(str(len(ll_pointatt)))
+        file_att.write('\n')
+        file_att.write("the number of cyclic attractors: ")
+        file_att.write(str(len(ll_cyclicatt)))
+        file_att.write('\n')
+        
+        file_att.write("\tname")
+        for s_node in ls_inputnodenames+ls_not_inputnodenames:
+            file_att.write('\t'+s_node)
+        file_att.write('\n')
+        
+        file_att.write("code\ttype")
+        for s_node in ls_inputnodenames:
+            file_att.write("\tinput")
+        for s_node in ls_not_inputnodenames:
+            if s_node in dic_snode_perturbed.keys():
+                file_att.write("\tperturbed")
+            else:
+                file_att.write("\tnormal")
+        file_att.write('\n')
+        
+        i_code = 0
+        for l_point in ll_pointatt:
+            file_att.write(str(i_code))
+            for array_state in l_point:
+                file_att.write('\t')
+                file_att.write("point")
+                for i in array_state:
+                    file_att.write('\t')
+                    file_att.write(str(int(i)))
+                file_att.write('\n')
+            i_code+=1
+        for l_cycle in ll_cyclicatt:
+            file_att.write(str(i_code))
+            for array_state in l_cycle:
+                file_att.write('\t')
+                file_att.write("cycle")
+                for i in array_state:
+                    file_att.write('\t')
+                    file_att.write(str(int(i)))
+                file_att.write('\n')
+            i_code+=1
         
