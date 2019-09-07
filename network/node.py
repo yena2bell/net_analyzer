@@ -24,12 +24,14 @@ class Node:
     
     def add_inwardlink(self, link):
         self.l_inwardlinks.append(link)
+        self.reset_dynamics_information()
         
     def add_outwardlink(self, link):
         self.l_outwardlinks.append(link)
         
     def delete_inwardlink(self, link):
         self.l_inwardlinks.pop(self.l_inwardlinks.index(link))
+        self.reset_dynamics_information()
         
     def delete_outwardlink(self, link):
         self.l_outwardlinks.pop(self.l_outwardlinks.index(link))
@@ -47,6 +49,8 @@ class Node:
         if self.dynamics_l_l_order_i_truthtable:
             return self.dynamics_l_l_order_i_truthtable[0]
         else:
+            if self.show_regulator_nodes():
+                print("'show_orderedname_regulators_truthtable' function returns [] but ",str(self)," is not source node.")
             return []
     
     def show_integerform_of_Boolean_truthtable(self):
@@ -54,10 +58,24 @@ class Node:
             return self.dynamics_l_l_order_i_truthtable[1]
         else:
             return None
+
+    def reset_dynamics_information(self):
+        self.dynamics_l_l_order_i_truthtable = None 
+        
+    def add_truthtable_integer_form(self, i_truthtable):
+        if i_truthtable == None:
+            return
+        self.dynamics_l_l_order_i_truthtable = [[str(node) for node in self.show_regulator_nodes()],i_truthtable]
+        print(str(self)," has new Boolean logic information")
+        print(Boolean_functions.output_logictable_of_i_logic(i_truthtable, len(self.show_regulator_nodes()), self.show_orderedname_regulators_truthtable()))
     
     def show_regulator_nodes(self):
         l_nodes_regulator = [link.show_start_node() for link in self.l_inwardlinks]
         return l_nodes_regulator
+    
+    def show_regulator_nodenames(self):
+        ls_nodenames = [str(node) for node in self.show_regulator_nodes()]
+        return ls_nodenames
     
     def show_connected_links(self):
         return list(set(self.l_inwardlinks+ self.l_outwardlinks))
