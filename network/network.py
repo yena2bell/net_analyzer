@@ -10,7 +10,7 @@ print(__name__)
 from .node import Node
 from .link import Directed_link
 from ..dynamics import expanded_network, Boolean_simulation
-from ..topology_analysis import feedback_analysis, basic_topology_functions,SCC_analysis
+from ..topology_analysis import feedback_analysis, basic_topology_functions,SCC_analysis, FVS_analysis
 from ..support_functions import folder_functions
 from . import network_generation
 
@@ -47,6 +47,24 @@ class Network_model:
             if len(basic_topology_functions.show_connected_components(ls_nodes, lt_edges)) ==1:#connected network
                 break
         self.add_nodes_edges_from_list_form(ls_nodes, lt_edges)
+        
+    def add_modalities_to_links_randomly(self, f_prob_activation=0.5):
+        dic_edge_symbol = network_generation.gen_modalities_to_network(self.l_links,f_prob_activation)
+        for link in self.l_links:
+            link.change_modality(dic_edge_symbol[link])
+    
+    def add_Boolean_logic_randomly(self, b_consider_modality=True):
+        if b_consider_modality:
+            for node in self.l_nodes:
+                l_ordered_regulators = node.show_regulator_nodenames()
+                dic_predecessor_b_modality = {str(link_inward.show_start_node()):link_inward.is_activating_link() for link_inward in node.show_inwardlinks()}
+                i_truthtable = network_generation.get_random_Boolean_logic_table_node(l_ordered_regulators, dic_predecessor_b_modality)
+                node.add_truthtable_integer_form(i_truthtable)
+        else:
+            for node in self.l_nodes:
+                l_ordered_regulators = node.show_regulator_nodenames()
+                i_truthtable = network_generation.get_random_Boolean_logic_table_node(l_ordered_regulators)
+                node.add_truthtable_integer_form(i_truthtable)
     
     def show_nodenames(self):
         return [str(node) for node in self.l_nodes]
@@ -77,9 +95,15 @@ class Network_model:
         self.s_address_net_folder = os.path.join(s_address,self.s_netname)
         folder_functions.directory_making(self.s_address_net_folder)
     
-    def show_links_list_of_tuple(self):
-        """return list of tuple such that (start node name, end node name)"""
-        return [(str(link.show_start_node()),str(link.show_end_node())) for link in self.l_links]
+    def show_links_list_of_tuple(self, b_modality_shown=False):
+        """return list of tuple such that (start node name, end node name)
+        if b_modality_shown == False, (start node name, end node name)
+        if b_modality_shown == True, (start node name, modality, end node name)
+        modality == True means activating"""
+        if b_modality_shown:
+            return [(str(link.show_start_node()),link.is_activating_link(),str(link.show_end_node())) for link in self.l_links]
+        else:
+            return [(str(link.show_start_node()),str(link.show_end_node())) for link in self.l_links]
     
     def add_node(self, s_node_name):
         """add new node to the network.
@@ -181,7 +205,10 @@ class Network_model:
                                                                        lt_s_node_i_perturbation, 
                                                                        self.show_address_of_network_folder(), 
                                                                        b_make_output_in_onefile)
-        
+    
+    def find_FVS_nodes(self):
+        ll_FVS = FVS_analysis.FVS_finding(self.show_nodenames(), self.show_links_list_of_tuple())
+        return ll_FVS
 
 
 class Expanded_network(Network_model):
