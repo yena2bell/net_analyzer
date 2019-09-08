@@ -10,9 +10,10 @@ print(__name__)
 from .node import Node
 from .link import Directed_link
 from ..dynamics import expanded_network, Boolean_simulation
-from ..topology_analysis import feedback_analysis, basic_topology_functions,SCC_analysis, FVS_analysis
+from ..topology_analysis import feedback_analysis, basic_topology_functions,SCC_analysis, FVS_analysis, MDS_analysis
 from ..support_functions import folder_functions
 from . import network_generation
+
 
 class Network_model:
     def __init__(self,s_netname):
@@ -185,8 +186,17 @@ class Network_model:
         lt_links_sub = basic_topology_functions.extract_subnet_topology(self.show_links_list_of_tuple(), l_nodes_subnetwork)
         net_sub = Network_model("subnet_of_"+str(self))
         net_sub.add_nodes_edges_from_list_form(l_nodes_subnetwork, lt_links_sub)
-        
+
         return net_sub
+
+
+    def find_MDS(self, i_covering_distance=1):
+        """find minimum dominating set. i_covering_distance is the distance one MDS node can cover
+        return list of MDS nodes list.
+        every node of network are either MDS node or downstream node of some MDS node within distance i_covering_distance"""
+        return MDS_analysis.find_MDS_directednet(self.show_nodenames(), self.show_links_list_of_tuple(False))
+        
+        
     
     def get_basin_attractor_under_perturbation_Boolean_synchronous_update(self, lt_s_node_i_perturbation=None, b_make_output_in_onefile=False):
         """lt_s_node_i_perturbatopm == [(s_nodename, i_perturbed_states), , ,]
@@ -206,7 +216,7 @@ class Network_model:
                                                                        self.show_address_of_network_folder(), 
                                                                        b_make_output_in_onefile)
     
-    def find_FVS_nodes(self):
+    def find_FVS(self):
         ll_FVS = FVS_analysis.FVS_finding(self.show_nodenames(), self.show_links_list_of_tuple())
         return ll_FVS
 
