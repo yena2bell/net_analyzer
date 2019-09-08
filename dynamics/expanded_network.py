@@ -10,7 +10,8 @@ Created on Thu Aug 29 21:04:25 2019
 from .Boolean_functions import get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_truthtable as get_min_Boolean_eq
 from ..network import network
 from ..topology_analysis.feedback_analysis import find_all_feedback
-from ..topology_analysis.FVS_analysis import calculate_next_combination, conversion_of_combination_num_to_list_of_comb
+from ..topology_analysis.FVS_analysis import conversion_of_combination_num_to_list_of_comb
+from ..support_functions.combination_functions import calculate_next_combination
 
 s_suffix_of_on_node = "_1"
 s_suffix_of_off_node = "_0" #if s_suffix_of_on_node[-len(s_suffix_of_off_node):] == s_suffix_of_off_node then occurs bug. vice versa
