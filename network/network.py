@@ -8,7 +8,7 @@ print(__name__)
 from .node import Node
 from .link import Directed_link
 from ..dynamics import expanded_network
-from ..topology_analysis import feedback_analysis
+from ..topology_analysis import feedback_analysis, MDS_analysis
 
 class Network_model:
     def __init__(self,s_netname):
@@ -109,6 +109,13 @@ class Network_model:
     def make_expanded_network(self):#not yet completed
         networkmodel_expanded = Network_model("expanded_network_of_"+self.s_netname)
         return networkmodel_expanded
+
+    def find_MDS(self, i_covering_distance=1):
+        """find minimum dominating set. i_covering_distance is the distance one MDS node can cover
+        return list of MDS nodes list.
+        every node of network are either MDS node or downstream node of some MDS node within distance i_covering_distance"""
+        return MDS_analysis.find_MDS_directednet(self.show_nodenames(), self.show_links_list_of_tuple())
+        
         
 
 class Expanded_network(Network_model):
