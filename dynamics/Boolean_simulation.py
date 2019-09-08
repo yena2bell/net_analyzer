@@ -174,9 +174,9 @@ def basin_calculation_for_specific_perturbation(ls_inputnodenames,
                 l_i_state_att = dic_i_inputcondition_l_l_att[i_inputcondition][i_code]
                 l_atts = [DSM.int_to_arraystate(i_state, len(ls_inputnodenames)+len(ls_not_inputnodenames)) for i_state in l_i_state_att]
                 ll_atts.append(l_atts)
-                l_states_in_basin = [np.concatenate([array_input_state,DSM.int_to_arraystate(i_state, len(matrix_converter)) @ matrix_converter + array_perturbed_state]) for i_state in ifs_basin.show_list_form()]
-                                
-                write_output_one_basin_one_att(s_address_basin, i_code, l_atts, l_states_in_basin)
+                iter_states_in_basin = (np.concatenate([array_input_state,DSM.int_to_arraystate(i_state, len(matrix_converter)) @ matrix_converter + array_perturbed_state]) for i_state in ifs_basin.as_generator())
+
+                write_output_one_basin_one_att(s_address_basin, i_code, l_atts, iter_states_in_basin)
             write_attractor_information(s_address_atts, ll_atts, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
         
 
@@ -321,7 +321,7 @@ def write_output_header(s_address, ls_inputnodenames, ls_not_inputnodenames, dic
         file_output.write("basin_code\tstate_type")
         file_output.write('\n')
         
-def write_output_one_basin_one_att(s_address, i_code, l_atts, l_states_in_basin):
+def write_output_one_basin_one_att(s_address, i_code, l_atts, iter_states_in_basin):
     with open(s_address,'a') as file_output:
         for array_state in l_atts:
             file_output.write('\n')
@@ -332,7 +332,7 @@ def write_output_one_basin_one_att(s_address, i_code, l_atts, l_states_in_basin)
                 file_output.write('\t')
                 file_output.write(str(int(i)))
             
-        for array_state in l_states_in_basin:
+        for array_state in iter_states_in_basin:
             file_output.write('\n')
             file_output.write(str(i_code))
             file_output.write('\t')

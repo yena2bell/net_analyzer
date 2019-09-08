@@ -27,14 +27,16 @@ class Integer_form_numberset:
             return False
         
     def __add__(self, i_num):
+        i_num = int(i_num)
         if self.has_the_number(i_num):#set already has i_num. so no change
             return Integer_form_numberset(self.i_integer_form_numberset)
         else:
-            return Integer_form_numberset(self.i_integer_form_numberset + int(pow(2,i_num)))
+            return Integer_form_numberset(self.i_integer_form_numberset + pow(2,i_num))
             
     def __sub__(self, i_num):
+        i_num = int(i_num)
         if self.has_the_number(i_num):#set already has i_num. so delete it
-            return Integer_form_numberset(self.i_integer_form_numberset - int(pow(2,i_num)))
+            return Integer_form_numberset(self.i_integer_form_numberset - pow(2,i_num))
         else:
             return Integer_form_numberset(self.i_integer_form_numberset)
             
@@ -54,6 +56,17 @@ class Integer_form_numberset:
             i += 1
             i_tmp = i_tmp >>1
         return l_set
+
+    def as_generator(self):
+        i_tmp = self.i_integer_form_numberset
+        if i_tmp > 0:
+            i = 0
+            while i_tmp:
+                if (i_tmp%2) == 1:
+                    yield i
+                i += 1
+                i_tmp = i_tmp >>1
+        
     
     def show_smallest_element(self):
         i_tmp = self.i_integer_form_numberset
