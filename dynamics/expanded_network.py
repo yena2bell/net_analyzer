@@ -27,6 +27,7 @@ def make_expanded_network_using_Boolean_truthtable(networkmodel):
     
     l_node_expanded_except_andnode = list(networkmodel_expanded.show_node())
     for node_expanded in l_node_expanded_except_andnode:
+        print(str(node_expanded)+"'s calculation starts")
         l_logic_equation = get_minimized_Boolean_function_node_using_QM(networkmodel, node_expanded)
         add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expanded, node_expanded, l_logic_equation)
     
