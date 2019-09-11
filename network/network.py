@@ -5,6 +5,7 @@ Created on Thu Aug 29 17:14:06 2019
 @author: jwKim
 """
 import os
+import pickle
 
 print(__name__)
 from .node import Node
@@ -30,10 +31,6 @@ class Network_model:
         return self.s_netname
     
     def read_network_structure(self, s_network_structure):
-        pass
-    
-    def save_network_data(self):
-        #save data in self.s_address_net_folder
         pass
     
     def add_nodes_edges_from_list_form(self, ls_nodenames, lt_edges):
@@ -81,6 +78,19 @@ class Network_model:
     
     def show_output_nodes(self):
         return [node for node in self.l_nodes if node.is_output_node()]
+    
+    def show_nodes_without_Boolean_truthtable(self):
+        print("source nodes without Boolean truthtable integer form")
+        for node in self.l_sourcenodes:
+            if node.show_integerform_of_Boolean_truthtable() == None:
+                print(str(node))
+        print("node with inward links without Boolean truthtable integer form")
+        for node in self.l_nodes:
+            if (node not in self.l_sourcenodes) and (node.show_integerform_of_Boolean_truthtable() == None):
+                if node.is_input_node():
+                    print(str(node)," marked as input node")
+                else:
+                    print(str(node))
     
     def show_address_of_network_folder(self):
         return self.s_address_net_folder
@@ -227,6 +237,11 @@ class Network_model:
     def find_FVS(self):
         ll_FVS = FVS_analysis.FVS_finding(self.show_nodenames(), self.show_links_list_of_tuple())
         return ll_FVS
+    
+    def save_using_pickle(self):
+        s_name_save = "pickle_save_"+str(self)+".bin"
+        with open(os.path.join(self.show_address_of_network_folder(),s_name_save), 'wb') as file_pickle:
+            pickle.dump(self, file_pickle)
 
 
 class Expanded_network(Network_model):

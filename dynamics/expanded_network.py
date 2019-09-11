@@ -29,6 +29,7 @@ def make_expanded_network_using_Boolean_truthtable(networkmodel):
     for node_expanded in l_node_expanded_except_andnode:
         print(str(node_expanded)+"'s calculation starts")
         l_logic_equation = get_minimized_Boolean_function_node_using_QM(networkmodel, node_expanded)
+        #print(l_logic_equation)
         add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expanded, node_expanded, l_logic_equation)
     
     #delete duplicated andnode. 
@@ -137,6 +138,7 @@ def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expa
 def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
     ll_stable_motif = []
     ll_feedbacks = find_all_feedback(ls_nodenames, lt_links)
+    print("the number of feedbacks in expanded network is ", len(ll_feedbacks))
     
     def check_contradict_state_of_same_node_in_feedback(l_feedback):
         """if node_up, node_down co-exist in the l_feedback, return False
@@ -146,7 +148,7 @@ def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
         for s_node_expanded in l_feedback:
             if s_andnode_connector not in s_node_expanded:
                 if s_node_expanded[-len(s_suffix_of_on_node):] == s_suffix_of_on_node:
-                    l_tmp = [s_node_expanded[:-len(s_suffix_of_on_node)],1]
+                    l_tmp = [s_node_expanded[:-len(s_suffix_of_on_node)],1]#[original_node_name,1] means original_node_name_on
                     if [s_node_expanded[:-len(s_suffix_of_on_node)],0] in ll_snode_1or0:
                         return False
                     else:
@@ -172,7 +174,7 @@ def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
     for l_feedback in ll_feedbacks:
         ls_andnodes = find_andnode_from_feedback(l_feedback)
         if ls_andnodes:
-            l_feedback_tmp = list(l_feedback)
+            l_feedback_tmp = l_feedback.copy()
             for s_andnode in ls_andnodes:
                 l_feedback_tmp += s_andnode.split(s_andnode_connector)
             if check_contradict_state_of_same_node_in_feedback(l_feedback_tmp):
@@ -180,6 +182,7 @@ def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
         else:#no andnode in the feedback
             if check_contradict_state_of_same_node_in_feedback(l_feedback):
                 ll_stable_motif.append(l_feedback)
+    print("the number of feedbacks containing andnodes and no contradicting nodes is ",len(lset_feedbacks_filtered_l_andnodes))
     
     #check all combination of ll_feedbacks_filtered_l_andnodes
     i_combination = 1
@@ -191,6 +194,7 @@ def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
             if l_combination_stablemotif in l_combination:
                 i_combination = calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
                 break
+            #if new combination already contains stable motif found, through that combination
         else:  
             set_candidate_of_stablemotif = set([])
             l_andnodes_of_combination = []
@@ -204,7 +208,7 @@ def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
                 for s_node in s_andnode.split(s_andnode_connector):
                     set_nodes_in_andnode_combination.add(s_node)
             
-            if not check_contradict_state_of_same_node_in_feedback(list(set_nodes_in_andnode_combination)):
+            if not check_contradict_state_of_same_node_in_feedback(list(set_nodes_in_andnode_combination.union(set_candidate_of_stablemotif))):
                 i_combination = calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
                 continue
             
