@@ -105,61 +105,75 @@ def get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_tr
     qm = QM(ls_orderd_regulators)
     s_logic_equation = qm.get_function(qm.solve(l_i_states_of_regulators,[])[1])
     if b_return_listform:
-        return parse_Boolean_logic_equation_to_list(s_logic_equation)
+        return parse_Boolean_logic_equation_to_list(s_logic_equation, ls_orderd_regulators, s_OR="OR", s_AND="AND", s_NOT="NOT")
     else:
         return s_logic_equation
 
-def parse_Boolean_logic_equation_to_list(s_logic_equation, 
+def parse_Boolean_logic_equation_to_list(s_logic_equation, ls_element_names=[],
                                          s_result='=',
                                          s_OR="OR", s_AND="AND", s_NOT="NOT", 
-                                         s_plus='+', s_minus='-', s_biggerequal=">=", s_bigger='>',s_smallerequal="<=",s_smaller='<',s_equal='='):
+                                         s_plus='+', s_minus='-', s_multiple='*',s_division='/',
+                                         s_biggerequal=">=", s_bigger='>',s_smallerequal="<=",s_smaller='<',s_equal='='):
     """this function is for 'get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_truthtable' function.
     parse the string to list form. 
+    it catch elements in ls_element_names. but it can also catch elements not in ls_element_names.
     assume that node name don't have space, node name don't contain s_OR, s_AND, s_NOT,s_equal, ')','('...etc
     s_OR, s_AND, s_NOT,s_equal, ')','(' are not contained to each other."""
     l_stack = []
     i_position = 0
     i_position_start_of_nodename = 0
     
-    l_operations = [s_result, s_OR, s_AND, s_NOT, s_plus, s_minus, s_biggerequal, 
+    l_operations = [s_result, s_OR, s_AND, s_NOT, s_plus, s_minus, s_multiple,s_division, s_biggerequal, 
                     s_bigger, s_smallerequal, s_smaller, s_equal]
     l_operations.sort(key=len, reverse=True)#check longer operation first, ("<=" is checked before "<" checked)
+    ls_element_names = ls_element_names.copy()
+    ls_element_names.sort(key=len, reverse=True)
     
     while i_position < len(s_logic_equation):
-        if s_logic_equation[i_position] == '(':
-            if i_position>i_position_start_of_nodename:
-                l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
-                i_position_start_of_nodename = i_position
-            l_stack.append('(')
-            i_position += 1
-            i_position_start_of_nodename += 1
-        elif s_logic_equation[i_position] == ')':       
-            if i_position>i_position_start_of_nodename:
-                l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
-                i_position_start_of_nodename = i_position
-            l_stack.append(')')
-            i_position += 1
-            i_position_start_of_nodename += 1
-        elif s_logic_equation[i_position] == ' ':#space
-            if i_position>i_position_start_of_nodename:
-                l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
-                i_position_start_of_nodename = i_position
-            i_position += 1
-            i_position_start_of_nodename += 1
-        else:
-            for s_operation in l_operations:
-                if s_logic_equation[i_position:i_position+len(s_operation)] == s_operation:
-                    if i_position>i_position_start_of_nodename:
-                        l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
-                        i_position_start_of_nodename = i_position
-                    l_stack.append(s_operation)
-                    i_position += len(s_operation)
-                    i_position_start_of_nodename += len(s_operation)
-                    break
-            else:
-                i_position += 1
-                if i_position == len(s_logic_equation):#at the end of logic equation
+        for s_name in ls_element_names:
+            if s_logic_equation[i_position:i_position+len(s_name)] == s_name:
+                if i_position>i_position_start_of_nodename:
                     l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
+                    i_position_start_of_nodename = i_position
+                l_stack.append(s_name)
+                i_position += len(s_name)
+                i_position_start_of_nodename += len(s_name)
+                break
+        else:
+            if s_logic_equation[i_position] == '(':
+                if i_position>i_position_start_of_nodename:
+                    l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
+                    i_position_start_of_nodename = i_position
+                l_stack.append('(')
+                i_position += 1
+                i_position_start_of_nodename += 1
+            elif s_logic_equation[i_position] == ')':       
+                if i_position>i_position_start_of_nodename:
+                    l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
+                    i_position_start_of_nodename = i_position
+                l_stack.append(')')
+                i_position += 1
+                i_position_start_of_nodename += 1
+            elif s_logic_equation[i_position] == ' ':#space
+                if i_position>i_position_start_of_nodename:
+                    l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
+                    i_position_start_of_nodename = i_position
+                i_position += 1
+                i_position_start_of_nodename += 1
+            else:
+                for s_operation in l_operations:
+                    if s_logic_equation[i_position:i_position+len(s_operation)] == s_operation:
+                        if i_position>i_position_start_of_nodename:
+                            l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
+                            i_position_start_of_nodename = i_position
+                        l_stack.append(s_operation)
+                        i_position += len(s_operation)
+                        i_position_start_of_nodename += len(s_operation)
+                        break
+                else:
+                    i_position += 1
+                    if i_position == len(s_logic_equation):#at the end of logic equation
+                        l_stack.append(s_logic_equation[i_position_start_of_nodename:i_position])
         
     return l_stack
 
@@ -168,7 +182,8 @@ def convert_Boolean_logic_equation_to_integer_form_truthtable(s_equation,
                                                               ts_order_of_inputs=None,
                                                               s_result='=',
                                          s_OR="OR", s_AND="AND", s_NOT="NOT", 
-                                         s_plus='+', s_minus='-', s_biggerequal=">=", s_bigger='>',s_smallerequal="<=",s_smaller='<',s_equal='='):
+                                         s_plus='+', s_minus='-', s_multiple='*',s_division='/',
+                                         s_biggerequal=">=", s_bigger='>',s_smallerequal="<=",s_smaller='<',s_equal='=='):
     """convert Boolean logic equation to integer form truthtable.
     s_equation can be "output = Boolean logic relations of regulators" or "Boolean logic relation of regulator without "output = " part.
     if ts_order_of_inputs == None, function returns order of regulator for that interger form truthtable depending on order of logic equation.
@@ -176,13 +191,13 @@ def convert_Boolean_logic_equation_to_integer_form_truthtable(s_equation,
         i.e. if float(element-name) has no error, it can be considered float vlaue.
     if ts_order_of_inputs is (s_regulator1, s_regulator2, s_regulator3,,,), function returns interger form truthtable according to that order."""
     dic_operation_nominal = {s_OR:"or", s_AND:"and", s_NOT:"not", 
-                             s_plus:'+', s_minus:'-', s_biggerequal:">=", 
+                             s_plus:'+', s_minus:'-',s_multiple:'*',s_division:'/', s_biggerequal:">=", 
                              s_bigger:'>',s_smallerequal:"<=",s_smaller:'<',s_equal:'=='}
     ls_equation = parse_Boolean_logic_equation_to_list(s_equation, s_OR, s_AND, s_NOT,s_equal)
     if ls_equation[1] == s_result:
         ls_equation = ls_equation[2:]
         
-    l_operations = [s_result, s_OR, s_AND, s_NOT, s_plus, s_minus, s_biggerequal, 
+    l_operations = [s_result, s_OR, s_AND, s_NOT, s_plus, s_minus,s_multiple, s_division, s_biggerequal, 
                     s_bigger, s_smallerequal, s_smaller, s_equal, '(',')']
     l_variables = list(set(ls_equation).difference(set(l_operations)))
     for i in range(len(l_variables)-1,-1,-1):
