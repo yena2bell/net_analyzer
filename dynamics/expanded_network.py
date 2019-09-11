@@ -71,7 +71,7 @@ def get_minimized_Boolean_function_node_using_QM(networkmodel, node_of_expandedm
         raise ValueError("incorrect suffix to the expanded network node!")
 
     #s_logic_equation is like '((NOT B) OR (NOT A))' or '((a AND b) OR c)' or  '(a AND b AND c)' ....
-    #print(l_logic_equation)
+    #print(str(node_of_expandedmodel), l_logic_equation)
     return l_logic_equation
 
 def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expanded, node_of_expandedmodel, l_logic_equation):

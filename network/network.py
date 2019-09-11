@@ -160,7 +160,8 @@ class Network_model:
         except ValueError:
             print("node having such name doesn't exist")
     
-    def add_directed_link(self, s_nodename_start, s_nodename_end):
+    def add_directed_link(self, s_nodename_start, s_nodename_end, modality=None):
+        """modality is True->activation link, False-> inhibitory link"""
         node_start = self.select_node(s_nodename_start)
         node_end = self.select_node(s_nodename_end)
         directed_link_new = Directed_link(node_start, node_end)
@@ -173,6 +174,13 @@ class Network_model:
     
         node_end.add_inwardlink(directed_link_new)
         node_start.add_outwardlink(directed_link_new)
+        
+        if not(modality==None):
+            if modality:
+                directed_link_new.change_modality(True)
+            else:
+                directed_link_new.change_modality(False)
+            
         
     def make_expanded_network(self):#not yet completed
         networkmodel_expanded = expanded_network.make_expanded_network_using_Boolean_truthtable(self)
