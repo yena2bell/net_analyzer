@@ -105,26 +105,38 @@ def get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_tr
     qm = QM(ls_orderd_regulators)
     s_logic_equation = qm.get_function(qm.solve(l_i_states_of_regulators,[])[1])
     if b_return_listform:
-        return parse_Boolean_logic_equation_to_list(s_logic_equation, ls_orderd_regulators, s_OR="OR", s_AND="AND", s_NOT="NOT")
+        return parse_Boolean_logic_equation_to_list(s_logic_equation, ls_orderd_regulators, OR="OR", AND="AND", NOT="NOT")
     else:
         return s_logic_equation
 
-def parse_Boolean_logic_equation_to_list(s_logic_equation, ls_element_names=[],
-                                         s_result='=',
-                                         s_OR="OR", s_AND="AND", s_NOT="NOT", 
-                                         s_plus='+', s_minus='-', s_multiple='*',s_division='/',
-                                         s_biggerequal=">=", s_bigger='>',s_smallerequal="<=",s_smaller='<',s_equal='='):
+def parse_Boolean_logic_equation_to_list(s_logic_equation, ls_element_names=[], **kwargs):
     """this function is for 'get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_truthtable' function.
     parse the string to list form. 
     it catch elements in ls_element_names. but it can also catch elements not in ls_element_names.
-    assume that node name don't have space, node name don't contain s_OR, s_AND, s_NOT,s_equal, ')','('...etc
-    s_OR, s_AND, s_NOT,s_equal, ')','(' are not contained to each other."""
+    assume that node name don't have space
+    in kwargs, result, OR, AND, NOT, plus, minus, multiple,division, biggerequal, bigger,smallerequal,smaller,equal
+    can be used to change the operation symbols to catch.
+    basic operation synbols are 
+    "result":'=', "OR":"or", "AND":"and", "NOT":"not", 
+    "plus":'+', "minus":'-', "multiple":'*',"division":'/',
+    "biggerequal":">=", "bigger":'>',"smallerequal":"<=","smaller":'<',"equal":'=='
+    
+    let the node names don't such symbols. of course, node names in ls_element_names are recognized well."""
+    
     l_stack = []
     i_position = 0
     i_position_start_of_nodename = 0
     
-    l_operations = [s_result, s_OR, s_AND, s_NOT, s_plus, s_minus, s_multiple,s_division, s_biggerequal, 
-                    s_bigger, s_smallerequal, s_smaller, s_equal]
+    dic_operations = {"result":'=', "OR":"or", "AND":"and", "NOT":"not", 
+                          "plus":'+', "minus":'-', "multiple":'*',"division":'/',
+                          "biggerequal":">=", "bigger":'>',"smallerequal":"<=","smaller":'<',"equal":'=='}
+    if kwargs:
+        for s_key in kwargs.keys():
+            dic_operations[s_key] = kwargs[s_key]
+    #apply kwargs to dic_operations.
+    
+    l_operations = list(dic_operations.values())
+
     l_operations.sort(key=len, reverse=True)#check longer operation first, ("<=" is checked before "<" checked)
     ls_element_names = ls_element_names.copy()
     ls_element_names.sort(key=len, reverse=True)
@@ -179,26 +191,52 @@ def parse_Boolean_logic_equation_to_list(s_logic_equation, ls_element_names=[],
 
 
 def convert_Boolean_logic_equation_to_integer_form_truthtable(s_equation, 
-                                                              ts_order_of_inputs=None,
-                                                              s_result='=',
-                                         s_OR="OR", s_AND="AND", s_NOT="NOT", 
-                                         s_plus='+', s_minus='-', s_multiple='*',s_division='/',
-                                         s_biggerequal=">=", s_bigger='>',s_smallerequal="<=",s_smaller='<',s_equal='=='):
+                                                              ts_order_of_inputs=[],
+                                                              **kwargs):
+                                                              
     """convert Boolean logic equation to integer form truthtable.
     s_equation can be "output = Boolean logic relations of regulators" or "Boolean logic relation of regulator without "output = " part.
-    if ts_order_of_inputs == None, function returns order of regulator for that interger form truthtable depending on order of logic equation.
+    if ts_order_of_inputs == [], function returns order of regulator for that interger form truthtable depending on order of logic equation.
     in that case, regulator name should contain at least one string. if name ahs only number, it will be considered numeric value.
         i.e. if float(element-name) has no error, it can be considered float vlaue.
-    if ts_order_of_inputs is (s_regulator1, s_regulator2, s_regulator3,,,), function returns interger form truthtable according to that order."""
-    dic_operation_nominal = {s_OR:"or", s_AND:"and", s_NOT:"not", 
-                             s_plus:'+', s_minus:'-',s_multiple:'*',s_division:'/', s_biggerequal:">=", 
-                             s_bigger:'>',s_smallerequal:"<=",s_smaller:'<',s_equal:'=='}
-    ls_equation = parse_Boolean_logic_equation_to_list(s_equation, s_OR, s_AND, s_NOT,s_equal)
-    if ls_equation[1] == s_result:
-        ls_equation = ls_equation[2:]
+    if ts_order_of_inputs is (s_regulator1, s_regulator2, s_regulator3,,,), function returns interger form truthtable according to that order.
+        in this case, ts_order_of_inputs should contain all elements in s_equation."""
+    
+    dic_operation_nominal = {"OR":"or", "AND":"and", "NOT":"not", 
+                             "plus":'+', "minus":'-',"multiple":'*',"division":'/', "biggerequal":">=", 
+                             "bigger":'>',"smallerequal":"<=","smaller":'<',"equal":'=='}
+    
+    dic_operation_in_equation = {"result":'=', "OR":"or", "AND":"and", "NOT":"not", 
+                          "plus":'+', "minus":'-', "multiple":'*',"division":'/',
+                          "biggerequal":">=", "bigger":'>',"smallerequal":"<=","smaller":'<',"equal":'=='}
+    if kwargs:
+        for s_key in kwargs.keys():
+            dic_operation_in_equation[s_key] = kwargs[s_key]
+    #apply kwargs to dic_operations.
+    
+    ls_equation = parse_Boolean_logic_equation_to_list(s_equation, ts_order_of_inputs,
+                                                       result=dic_operation_in_equation["result"], 
+                                                       OR=dic_operation_in_equation["OR"], 
+                                                       AND=dic_operation_in_equation["AND"], 
+                                                       NOT=dic_operation_in_equation["NOT"], 
+                                                       plus=dic_operation_in_equation["plus"], 
+                                                       minus=dic_operation_in_equation["minus"], 
+                                                       multiple=dic_operation_in_equation["multiple"],
+                                                       division=dic_operation_in_equation["division"], 
+                                                       biggerequal=dic_operation_in_equation["biggerequal"], 
+                                                       bigger=dic_operation_in_equation["bigger"],
+                                                       smallerequal=dic_operation_in_equation["smallerequal"],
+                                                       smaller=dic_operation_in_equation["smaller"],
+                                                       equal=dic_operation_in_equation["equal"])
+    #arguments of parse_Boolean_logic_equation_to_list
+    #s_logic_equation, ls_element_names=[], s_result='=', s_OR="OR", s_AND="AND", s_NOT="NOT", 
+    #s_plus='+', s_minus='-', s_multiple='*',s_division='/',
+     #s_biggerequal=">=", s_bigger='>',s_smallerequal="<=",s_smaller='<',s_equal='='
+    if ls_equation[0] == dic_operation_in_equation["result"]:
+        ls_equation = ls_equation[1:]
         
-    l_operations = [s_result, s_OR, s_AND, s_NOT, s_plus, s_minus,s_multiple, s_division, s_biggerequal, 
-                    s_bigger, s_smallerequal, s_smaller, s_equal, '(',')']
+    l_operations = list(dic_operation_in_equation.values())
+    l_operations.extend(['(',')'])
     l_variables = list(set(ls_equation).difference(set(l_operations)))
     for i in range(len(l_variables)-1,-1,-1):
         try: 
@@ -214,9 +252,9 @@ def convert_Boolean_logic_equation_to_integer_form_truthtable(s_equation,
     #l_variables become the order data of regulators.
     
     for i,s_element in enumerate(ls_equation):
-        for s_operation in dic_operation_nominal.keys():
-            if s_element == s_operation:
-                ls_equation[i] = dic_operation_nominal[s_operation]
+        for s_key in dic_operation_nominal.keys():
+            if s_element == dic_operation_in_equation[s_key]:
+                ls_equation[i] = dic_operation_nominal[s_key]
                 break
     #s_operation elements in ls_equation is changed to python standard version
     
