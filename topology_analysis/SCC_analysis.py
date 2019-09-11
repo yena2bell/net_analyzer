@@ -98,8 +98,11 @@ def decompose_SCC(l_nodes, lt_links_data):
     dic_startnode_setlinks = {}
     ll_SCC = []
     
+    for s_node in l_remained_nodes:
+        dic_startnode_setlinks[s_node] = set([])
+    
     for t_link in lt_links_data:
-        dic_startnode_setlinks.setdefault(t_link[0],set([])).add(t_link)
+        dic_startnode_setlinks[t_link[0]].add(t_link)
 
     while(l_remained_nodes):
         ll_SCC += find_SCC_under_startnode(l_remained_nodes.pop(0), l_remained_nodes, dic_startnode_setlinks)
