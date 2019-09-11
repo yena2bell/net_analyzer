@@ -68,6 +68,46 @@ class Node:
         self.dynamics_l_l_order_i_truthtable = [[str(node) for node in self.show_regulator_nodes()],i_truthtable]
         print(str(self)," has new Boolean logic information")
         print(Boolean_functions.output_logictable_of_i_logic(i_truthtable, len(self.show_regulator_nodes()), self.show_orderedname_regulators_truthtable()))
+        
+    def show_Boolean_logic_equation_form(self):
+        return self.dynamics_s_logicequation
+    
+    def enter_Boolean_logic_equation_form(self, s_Boolean_logic_equation):
+        self.dynamics_s_logicequation = str(s_Boolean_logic_equation)
+        
+    def get_truthtable_integer_form_from_logic_equation(self,**kwargs):
+        """default of operation words are as follows
+        result='=', OR="OR", AND="AND", NOT="NOT", 
+        plus='+', minus='-', biggerequal=">=", 
+        bigger='>',smallerequal="<=",smaller='<',equal='=='
+        if some changes are needed, write it using keyword arguments"""
+        
+        dic_operations = {"result":'=', "OR":"or", "AND":"and", "NOT":"not", 
+                          "plus":'+', "minus":'-', "multiple":'*',"division":'/',
+                          "biggerequal":">=", "bigger":'>',"smallerequal":"<=","smaller":'<',"equal":'=='}
+        if kwargs:
+            for s_key in kwargs.keys():
+                dic_operations[s_key] = kwargs[s_key]
+                
+        if self.dynamics_s_logicequation == None:
+            print("before doing 'get_truthtable_integer_form_from_logic_equation' function, enter the logic_equation(string form) using 'enter_Boolean_logic_equation_form' method")
+            return
+        elif self.dynamics_s_logicequation[:len(str(self))+1] == str(self)+' ':
+            s_logic_equation = self.dynamics_s_logicequation[len(str(self))+1:]
+            
+        if not self.show_regulator_nodenames():
+            print("before doing 'get_truthtable_integer_form_from_logic_equation' function, construct network and make the links with regulator of this node")
+            print("if this node is source node, this 'get_truthtable_integer_form_from_logic_equation' method is meaningless")
+            return
+        i_truthtable, l_order = Boolean_functions.convert_Boolean_logic_equation_to_integer_form_truthtable(s_logic_equation, self.show_regulator_nodenames(),
+                                                                                                            result=dic_operations["result"], OR=dic_operations["OR"], AND=dic_operations["AND"], NOT=dic_operations["NOT"], 
+                                                                                                            plus=dic_operations["plus"], minus=dic_operations["minus"], biggerequal=dic_operations["biggerequal"], bigger=dic_operations["bigger"],
+                                                                                                            smallerequal=dic_operations["smallerequal"],smaller=dic_operations["smaller"],equal=dic_operations["equal"])
+        self.add_truthtable_integer_form(i_truthtable)
+        
+        #check
+        if list(self.show_orderedname_regulators_truthtable()) != list(l_order):
+            print("Warning! in 'get_truthtable_integer_form_from_logic_equation' method, regulator order has some problem")
     
     def show_regulator_nodes(self):
         l_nodes_regulator = [link.show_start_node() for link in self.l_inwardlinks]
