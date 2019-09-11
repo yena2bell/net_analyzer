@@ -82,6 +82,19 @@ class Network_model:
     def show_output_nodes(self):
         return [node for node in self.l_nodes if node.is_output_node()]
     
+    def show_nodes_without_Boolean_truthtable(self):
+        print("source nodes without Boolean truthtable integer form")
+        for node in self.l_sourcenodes:
+            if node.show_integerform_of_Boolean_truthtable() == None:
+                print(str(node))
+        print("node with inward links without Boolean truthtable integer form")
+        for node in self.l_nodes:
+            if (node not in self.l_sourcenodes) and (node.show_integerform_of_Boolean_truthtable() == None):
+                if node.is_input_node():
+                    print(str(node)," marked as input node")
+                else:
+                    print(str(node))
+    
     def show_address_of_network_folder(self):
         return self.s_address_net_folder
     
