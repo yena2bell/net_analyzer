@@ -85,6 +85,7 @@ def find_all_feedback_from_FVS(lt_links, ls_FVS=None):
                 lllt_feedbackfragment.append(dic_ts_FVSnodepair_llt_downstreams[(ts_cycleofFVS[i], ts_cycleofFVS[i+1])])
                 if not dic_ts_FVSnodepair_llt_downstreams[(ts_cycleofFVS[i], ts_cycleofFVS[i+1])]:
                     b_stopflag = True
+                    break
             lllt_feedbackfragment.append(dic_ts_FVSnodepair_llt_downstreams[(ts_cycleofFVS[-1],ts_cycleofFVS[0])])
             if not dic_ts_FVSnodepair_llt_downstreams[(ts_cycleofFVS[-1],ts_cycleofFVS[0])]:
                 b_stopflag = True
@@ -154,6 +155,7 @@ def find_all_feedback(ls_nodenames, lt_links):
                 dic_node_counter[s_node_trajectorystart] =-1
     
     return ll_feedbacks
+
         
     
     
