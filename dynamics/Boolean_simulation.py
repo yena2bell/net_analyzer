@@ -130,10 +130,10 @@ def basin_calculation_for_specific_perturbation(ls_inputnodenames,
         for ifs_basin in dic_i_inputcondition_l_integerformsets[i_inputcondition]:
             i_state = ifs_basin.show_smallest_element()#i_state don't contain input states and perturbed states
             if i_inputcondition == -1:
-                array_state_all = DSM.int_to_arraystate(i_state, len(matrix_converter)) @ matrix_converter + array_perturbed_state
+                array_state_all = np.matmul(DSM.int_to_arraystate(i_state, len(matrix_converter)), matrix_converter) + array_perturbed_state
             else:
                 array_state_all = np.concatenate([DSM.int_to_arraystate(i_inputcondition, len(ls_inputnodenames)),
-                                              DSM.int_to_arraystate(i_state, len(matrix_converter)) @ matrix_converter + array_perturbed_state])
+                                              np.matmul(DSM.int_to_arraystate(i_state, len(matrix_converter)), matrix_converter) + array_perturbed_state])
             l_att = find_attractor_of_initial_state(ls_inputnodenames,
                                                     ls_not_inputnodenames, 
                                                     dic_nodename_i_truthtable, 
@@ -149,7 +149,7 @@ def basin_calculation_for_specific_perturbation(ls_inputnodenames,
         for i, l_att in enumerate(dic_i_inputcondition_l_l_att[i_inputcondition]):
             for i_state in l_att:
                 array_state = DSM.int_to_arraystate(i_state, (len(ls_inputnodenames)+ len(ls_not_inputnodenames)))
-                i_state_modified = DSM.arraystate_to_int(array_state[-len(ls_not_inputnodenames):] @ matrix_converter.transpose())
+                i_state_modified = DSM.arraystate_to_int(np.matmul(array_state[-len(ls_not_inputnodenames):], matrix_converter.transpose()))
                 dic_i_inputcondition_l_integerformsets[i_inputcondition][i] -= i_state_modified
 
     #printout code
@@ -174,7 +174,7 @@ def basin_calculation_for_specific_perturbation(ls_inputnodenames,
                 l_i_state_att = dic_i_inputcondition_l_l_att[i_inputcondition][i_code]
                 l_atts = [DSM.int_to_arraystate(i_state, len(ls_inputnodenames)+len(ls_not_inputnodenames)) for i_state in l_i_state_att]
                 ll_atts.append(l_atts)
-                iter_states_in_basin = (np.concatenate([array_input_state,DSM.int_to_arraystate(i_state, len(matrix_converter)) @ matrix_converter + array_perturbed_state]) for i_state in ifs_basin.as_generator())
+                iter_states_in_basin = (np.concatenate([array_input_state,np.matmul(DSM.int_to_arraystate(i_state, len(matrix_converter)), matrix_converter) + array_perturbed_state]) for i_state in ifs_basin.as_generator())
 
                 write_output_one_basin_one_att(s_address_basin, i_code, l_atts, iter_states_in_basin)
             write_attractor_information(s_address_atts, ll_atts, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
@@ -196,12 +196,12 @@ def basin_calculation_for_specific_inputcondition_and_perturbation(ls_inputnoden
         else:
             i_next = i
             ifs_trajectory = DSM.Integer_form_numberset(0)#set of states in this trajectory, 0 means empty set.
-            array_all = np.concatenate([array_input_state, DSM.int_to_arraystate(i_next, len(matrix_converter)) @ matrix_converter + array_perturbed_state])
+            array_all = np.concatenate([array_input_state, np.matmul(DSM.int_to_arraystate(i_next, len(matrix_converter)), matrix_converter) + array_perturbed_state])
             while not ifs_all.has_the_number(i_next):
                 ifs_trajectory += i_next
                 ifs_all += i_next
                 array_all = next_state_calculatrion(array_all, ls_not_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo)
-                i_next = int(DSM.arraystate_to_int(array_all[-len(ls_not_inputnodenames):] @ matrix_converter.transpose()))
+                i_next = int(DSM.arraystate_to_int(np.matmul(array_all[-len(ls_not_inputnodenames):], matrix_converter.transpose())))
             
             for ifs_others in l_integerformset: # check whether this trajectory is connected alreaed calculated trajectory.
                 if ifs_others.has_the_number(i_next):#if connected to already calculted one, union two trajectory
@@ -248,7 +248,7 @@ def next_state_calculatrion(array_state_all, ls_not_inputnodenames, dic_nodename
     for s_nodename in dic_nodename_i_truthtable.keys():
         i_logic = dic_nodename_i_truthtable[s_nodename]
         matrix_regulator_state = dic_nodename_array_regulatorinfo[s_nodename]
-        array_state_regulator = array_state_all @ matrix_regulator_state #sub state of regulators of that node.
+        array_state_regulator = np.matmul(array_state_all, matrix_regulator_state) #sub state of regulators of that node.
         array_next[-(ls_not_inputnodenames_reverse.index(s_nodename)+1)] = Boolean_functions.Boolean_function(i_logic, array_state_regulator)
 
     return array_next
