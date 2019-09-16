@@ -29,7 +29,6 @@ def make_expanded_network_using_Boolean_truthtable(networkmodel):
     for node_expanded in l_node_expanded_except_andnode:
         print(str(node_expanded)+"'s calculation starts")
         l_logic_equation = get_minimized_Boolean_function_node_using_QM(networkmodel, node_expanded)
-        #print(l_logic_equation)
         add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expanded, node_expanded, l_logic_equation)
     
     #delete duplicated andnode. 
@@ -41,6 +40,10 @@ def make_expanded_network_using_Boolean_truthtable(networkmodel):
                 if s_andnode_connector in str(node_compared):
                     set_components_compared = set(str(node_compared).split(s_andnode_connector)) 
                     if set_coponents == set_components_compared:
+                        ls_node_regulating = node_expanded.show_regulating_nodenames()
+                        for s_node in node_compared.show_regulating_nodenames():
+                            if s_node not in ls_node_regulating:
+                                networkmodel_expanded.add_directed_link(str(node_expanded), s_node)
                         networkmodel_expanded.delete_node(str(node_compared))
                 else:
                     continue
@@ -125,7 +128,7 @@ def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expa
                             l_stack.append(s_tmp)
                 else:
                     raise ValueError(str(node_of_expandedmodel)+" has not appropriate minimized logic equation")
-                    
+
         for s_node_new in l_stack:
             networkmodel_expanded.add_node(s_node_new)
             networkmodel_expanded.add_directed_link(s_node_new, str(node_of_expandedmodel))

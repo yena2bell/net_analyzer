@@ -100,9 +100,12 @@ def get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_tr
     i_num_of_regulators = len(ls_orderd_regulators)
     l_l_states_regulators = [list(("{:0>%d}" %i_num_of_regulators).format(bin(i)[2:])) for i in range(pow(2,i_num_of_regulators))]
     l_l_states_regulators = [[int(i) for i in l_state] for l_state in l_l_states_regulators]
-    
+
+    ls_ordered_regulators_copy = ls_orderd_regulators.copy()
+    ls_ordered_regulators_copy.reverse()
     l_i_states_of_regulators = [i for i in range(pow(2,i_num_of_regulators)) if Boolean_function(i_logic, l_l_states_regulators[i])]
-    qm = QM(ls_orderd_regulators)
+
+    qm = QM(ls_ordered_regulators_copy)
     s_logic_equation = qm.get_function(qm.solve(l_i_states_of_regulators,[])[1])
     if b_return_listform:
         return parse_Boolean_logic_equation_to_list(s_logic_equation, ls_orderd_regulators, OR="OR", AND="AND", NOT="NOT")

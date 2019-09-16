@@ -117,6 +117,14 @@ class Node:
         ls_nodenames = [str(node) for node in self.show_regulator_nodes()]
         return ls_nodenames
     
+    def show_regulating_nodes(self):
+        l_nodes_regulating = [link.show_end_node() for link in self.l_outwardlinks]
+        return l_nodes_regulating
+    
+    def show_regulating_nodenames(self):
+        ls_nodenames = [str(node) for node in self.show_regulating_nodes()]
+        return ls_nodenames
+    
     def show_connected_links(self):
         return list(set(self.l_inwardlinks+ self.l_outwardlinks))
     
