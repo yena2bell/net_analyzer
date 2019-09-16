@@ -115,13 +115,14 @@ def find_all_feedback(ls_nodenames, lt_links):
     ll_feedbacks = []
     for l_SCC in ll_SCC:
         lt_links_in_SCC = basic_topology_functions.extract_subnet_topology(lt_links, l_SCC)
+        print("feedbacks are calculated in subnetwork with ",len(l_SCC)," nodes")
         
         dic_startnode_endnodes = {}
         for s_nodename in l_SCC:
             dic_startnode_endnodes[s_nodename] = []
             for t_link in lt_links_in_SCC:
                 if t_link[0] == s_nodename:
-                    dic_startnode_endnodes[s_nodename].append(t_link[1])
+                    dic_startnode_endnodes[s_nodename].append(t_link[-1])
                     #print(dic_startnode_endnodes)
         dic_node_counter = {}
         for s_nodename in l_SCC:
@@ -144,6 +145,7 @@ def find_all_feedback(ls_nodenames, lt_links):
                         s_node_next = dic_startnode_endnodes[l_trajectory[-1]][i_counter]
                         if s_node_next == s_node_trajectorystart:
                             ll_feedbacks.append(list(l_trajectory))
+                            
                         if s_node_next in l_trajectory:
                             dic_node_counter[l_trajectory[-1]] -= 1
                         else:

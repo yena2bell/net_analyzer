@@ -64,7 +64,7 @@ def extract_subnet_topology(lt_links, ls_nodes_sub):
     lt_links_sub = []
     set_nodes_sub = set(ls_nodes_sub)
     for t_link in lt_links:
-        if (t_link[0] in set_nodes_sub) and (t_link[1] in set_nodes_sub):
+        if (t_link[0] in set_nodes_sub) and (t_link[-1] in set_nodes_sub):
             lt_links_sub.append(copy.deepcopy(t_link))
     
     return lt_links_sub

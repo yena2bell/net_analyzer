@@ -242,6 +242,12 @@ class Network_model:
         s_name_save = "pickle_save_"+str(self)+".bin"
         with open(os.path.join(self.show_address_of_network_folder(),s_name_save), 'wb') as file_pickle:
             pickle.dump(self, file_pickle)
+            
+    def find_all_feedbacks(self):
+        ll_feedbacks = feedback_analysis.find_all_feedback(self.show_nodenames(), self.show_links_list_of_tuple(False))
+        return ll_feedbacks
+        
+        
 
 
 class Expanded_network(Network_model):
