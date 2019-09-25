@@ -146,6 +146,8 @@ def find_all_feedback(ls_nodenames, lt_links):
                         s_node_next = dic_startnode_endnodes[l_trajectory[-1]][i_counter]
                         if s_node_next == s_node_trajectorystart:
                             ll_feedbacks.append(list(l_trajectory))
+                            if len(ll_feedbacks)%20000 == 0:
+                                print("calculated feedbacks are now ",len(ll_feedbacks))
                             
                         if s_node_next in l_trajectory:
                             dic_node_counter[l_trajectory[-1]] -= 1

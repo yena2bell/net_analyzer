@@ -246,6 +246,10 @@ class Network_model:
     def find_all_feedbacks(self):
         ll_feedbacks = feedback_analysis.find_all_feedback(self.show_nodenames(), self.show_links_list_of_tuple(False))
         return ll_feedbacks
+    
+    def find_feedback_cutting_nodes(self):
+        l_FCNs = FVS_analysis.find_feedback_cutting_nodes(self.show_nodenames(), self.show_links_list_of_tuple())
+        return l_FCNs
         
         
 

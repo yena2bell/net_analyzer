@@ -25,7 +25,8 @@ def find_MDS_directednet(ls_nodes, lt_links, i_covering_distance=1):
     li_index_nodes_input.sort()
     
     i_num_nodes_not_input = len(ls_nodes) - len(li_index_nodes_input)
-    
+    print("MDS calculation. maximum calculation is ", pow(2,i_num_nodes_not_input))
+    i_calculation = 0
     i_test_comb = 0          
     s_test_comb = ("{0:0%db}"%i_num_nodes_not_input).format(i_test_comb)
     l_test_comb = list(s_test_comb)
@@ -39,6 +40,9 @@ def find_MDS_directednet(ls_nodes, lt_links, i_covering_distance=1):
             array_covered = np.dot(array_topology_with_selfloop, array_covered)
         if np.all(array_covered):
             larray_MDS.append(array_test_comb)
+        i_calculation += 1
+        if i_calculation % 20000 == 0:
+            print(i_calculation,"th calculation is done")
         if len(larray_MDS) == 1:
             i_num_MDS = np.count_nonzero(array_test_comb)
             

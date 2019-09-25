@@ -14,12 +14,12 @@ def FVS_finding(l_nodes_data, lt_links_data):
     for l_SCC in ll_SCC:
         if len(l_SCC)>=2:
             l_nodes_SCC = l_SCC
-            lt_links_SCC = list(filter(lambda x: x[0] in l_nodes_SCC and x[1] in l_nodes_SCC, lt_links_data))
+            lt_links_SCC = list(filter(lambda x: x[0] in l_nodes_SCC and x[-1] in l_nodes_SCC, lt_links_data))
             ll_FVS_of_SCC = FVS_finding_basic(l_nodes_SCC, lt_links_SCC)
             lll_FVSs_of_SCC.append(ll_FVS_of_SCC)
         else:
             for t_link in lt_links_data:
-                if l_SCC[0] == t_link[0] and l_SCC[0] == t_link[1]:
+                if l_SCC[0] == t_link[0] and l_SCC[0] == t_link[-1]:
                     lll_FVSs_of_SCC.append([[l_SCC[0]]])
     
     ll_FVS = lll_FVSs_of_SCC.pop()
@@ -193,3 +193,84 @@ def FVS_finding_basic(l_nodes_data, lt_links_data, i_combination_start = 0, s_fi
         ll_FVS.append(l_FVS)
 
     return(ll_FVS)
+
+
+def find_feedback_cutting_nodes_from_SCC(l_nodes, lt_links):
+    """let the lt_links and l_nodes be SCC network"""
+    l_remained_nodes = l_nodes.copy()    
+    print("the number of nodes to analyze is", len(l_remained_nodes))
+    dic_startnode_s_downstreams = {}
+    dic_startnode_i_counter = {}
+    l_feedback_cutting_nodes = []
+    for s_node in l_remained_nodes:
+        dic_startnode_s_downstreams[s_node] = []
+    for t_link in lt_links:
+        dic_startnode_s_downstreams[t_link[0]].append(t_link[-1])
+    dic_startnode_i_counter = {s_node:len(dic_startnode_s_downstreams[s_node])-1 for s_node in l_remained_nodes}
+    
+    if len(l_remained_nodes) == 1:
+        if l_remained_nodes[0] in dic_startnode_s_downstreams[l_remained_nodes[0]]:
+            return [l_remained_nodes[0]]
+        else:
+            return []
+    #one node SCC case
+    
+    s_start_node  = l_remained_nodes[0]
+    l_trajectory = [s_start_node]
+    s_next_node = dic_startnode_s_downstreams[l_trajectory[-1]][0]
+    while s_next_node not in l_trajectory:
+        l_trajectory.append(s_next_node)
+        s_next_node = dic_startnode_s_downstreams[l_trajectory[-1]][0]
+    l_feedback_cutting_nodes.append(s_next_node)
+    #get first feedback cutting node
+    #it needs to be SCC more than 2 nodes
+    
+    l_queue = [l_feedback_cutting_nodes[0]]
+    
+    dic_tmp_countermemory = {}#temporal memory for feedback cutting node's i_counter
+    
+    while l_queue:
+        s_FCN = l_queue.pop(0)
+        l_trajectory = [s_FCN]
+        if s_FCN in dic_tmp_countermemory.keys():
+            dic_startnode_i_counter[s_FCN] = dic_tmp_countermemory[s_FCN]
+        #dic_startnode_i_counter = {s_node:len(dic_startnode_s_downstreams[s_node])-1 for s_node in l_remained_nodes}
+        #reset the counter
+        
+        while l_trajectory:                
+            if dic_startnode_i_counter[l_trajectory[-1]] == -1:
+                l_trajectory.pop(-1)
+            else:
+                s_next = dic_startnode_s_downstreams[l_trajectory[-1]][dic_startnode_i_counter[l_trajectory[-1]]]
+                dic_startnode_i_counter[l_trajectory[-1]] -= 1
+                if s_next in l_feedback_cutting_nodes:
+                    pass #l_trajectory is a feedback cut by s_FCN
+                elif s_next in l_trajectory:
+                    l_feedback_cutting_nodes.append(l_trajectory[-1])
+                    l_queue.append(l_trajectory[-1])
+                    dic_tmp_countermemory[l_trajectory[-1]] = dic_startnode_i_counter[l_trajectory[-1]]
+                    dic_startnode_i_counter[l_trajectory[-1]] = -1
+                else:
+                    l_trajectory.append(s_next)
+            
+    return l_feedback_cutting_nodes
+
+def find_feedback_cutting_nodes(l_nodes, lt_links):
+    ll_SCC = SCC_analysis.decompose_SCC(l_nodes, lt_links)
+    
+    l_FCNs_of_all = []
+    for l_SCC in ll_SCC:
+        if len(l_SCC)>=2:
+            l_nodes_SCC = l_SCC
+            lt_links_SCC = list(filter(lambda x: x[0] in l_nodes_SCC and x[-1] in l_nodes_SCC, lt_links))
+            l_FCN_of_SCC = find_feedback_cutting_nodes_from_SCC(l_nodes_SCC, lt_links_SCC)
+            l_FCNs_of_all.extend(l_FCN_of_SCC)
+        else:
+            for t_link in lt_links:
+                if l_SCC[0] == t_link[0] and l_SCC[0] == t_link[-1]:
+                    l_FCNs_of_all.append(l_SCC[0])
+    
+    return l_FCNs_of_all
+                
+    
+        
