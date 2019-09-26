@@ -12,7 +12,7 @@ def arraystate_to_int(array_state):
 
 def int_to_arraystate(i_state, i_num_of_nodes):
     s_state = ("{:>0%d}" %i_num_of_nodes).format(bin(i_state)[2:])
-    return np.array([int(i) for i in s_state])
+    return np.array(list(s_state), dtype=int)
 
 class Integer_form_numberset:
     """if self.i_integer_form_numberset has binary form of 1001101, then this set has number 0,2,3,6

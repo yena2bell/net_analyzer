@@ -5,10 +5,8 @@ Created on Wed Sep  4 19:06:56 2019
 @author: jwKim
 """
 import numpy as np
-import os, time
 
 from . import dynamics_supporting_module as DSM
-from ..support_functions.folder_functions import directory_making
 from . import Boolean_functions
 
 def extract_dynamics_information_from_network(network):#checked
@@ -47,31 +45,18 @@ def extract_dynamics_information_from_network(network):#checked
                 array_tmp[i_row][i_column] = 1
             dic_nodename_array_regulatorinfo[str(node)] = array_tmp
     
-    return ls_inputnodenames, ls_not_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo
+    return ls_nodename_ordered, ls_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo
     
         
-def basin_calculation_for_specific_perturbation(ls_inputnodenames, 
-                                                ls_not_inputnodenames, 
+def basin_calculation_for_specific_perturbation(l_order_nodes,
+                                                ls_inputnodenames, 
                                                 dic_nodename_i_truthtable, 
                                                 dic_nodename_array_regulatorinfo, 
-                                                lt_s_nodename_i_perturbedstate, 
-                                                s_address_folder_output, 
-                                                b_combine_output_in_one_file = False):
+                                                lt_s_nodename_i_perturbedstate):
     """use Boolean synchronous update
     lt_s_nodename_i_perturbedstate = [(nodename, 1 or 0), (nodename, True of False),,,]
     if b_combine_output_in_one_file == True, outputs for each input_condition will be written in one file."""
     
-
-    
-    #making folder for output files 
-    s_foldername_for_output = time.strftime("%Y%m%d_%Hhour%Mmin%Ssec",time.localtime(time.time()))
-    if not lt_s_nodename_i_perturbedstate:
-        s_foldername_for_output += "_no_perturbation"
-    else:
-        for t_node_state in lt_s_nodename_i_perturbedstate:
-            s_foldername_for_output += '_'+str(t_node_state[0])+'_'+str(t_node_state[1])
-    s_address_folder_output = os.path.join(s_address_folder_output, s_foldername_for_output)
-    directory_making(s_address_folder_output)
     
     #check the lt_s_nodename_i_perturbedstate. and convert it to dic_snode_perturbed
     dic_snode_perturbed = dict(lt_s_nodename_i_perturbedstate)#key is perturbed node, value is perturbed state
@@ -80,322 +65,314 @@ def basin_calculation_for_specific_perturbation(ls_inputnodenames,
     for s_inputnode in ls_inputnodenames:
         if s_inputnode in dic_snode_perturbed.keys():
             raise ValueError(s_inputnode+" is input node but perturbed")
-
-    #write dynamics info text file. it contains input nodes, perturbed nodes, and perturbed state
-    write_dynamics_information(os.path.join(s_address_folder_output,"dynamics_info.txt"), ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
-    
-    #modify dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo to reflect modification
-    for s_node_perturbed in dic_snode_perturbed.keys():
-        if dic_snode_perturbed[s_node_perturbed]:#perturbed to 1 or True
-            dic_nodename_i_truthtable[s_node_perturbed] = 1
-        else:
-            dic_nodename_i_truthtable[s_node_perturbed] = 0
-        dic_nodename_array_regulatorinfo[s_node_perturbed] = np.array([[0]*0]*(len(ls_inputnodenames)+len(ls_not_inputnodenames)))
-    
-    #make perturbation information as array_perturbed_state and matrix_converter
-    array_perturbed_state, matrix_converter = perturbed_state_combining_matrix_and_state(ls_not_inputnodenames, dic_snode_perturbed)
     
     #calculate basins for each input condition. and summarize basin information as integer_form_set.
-    dic_i_inputcondition_l_integerformsets = {}
+    dic_i_inputcondition_l_basin = {}
     if ls_inputnodenames:
         for i_inputcondition in range(pow(2,len(ls_inputnodenames))):
             array_inputcondition = DSM.int_to_arraystate(i_inputcondition, len(ls_inputnodenames))
             print(i_inputcondition, " input condition calculation starts")
-            l_integerformset = basin_calculation_for_specific_inputcondition_and_perturbation(ls_inputnodenames, 
-                                                                           ls_not_inputnodenames, 
-                                                                           dic_nodename_i_truthtable, 
-                                                                           dic_nodename_array_regulatorinfo, 
-                                                                           array_perturbed_state, 
-                                                                           matrix_converter,
-                                                                           array_inputcondition)
-            dic_i_inputcondition_l_integerformsets[i_inputcondition] = l_integerformset
+            l_basin = attractor_basin_calculation_for_specific_inputcondition_perturbation(l_order_nodes,
+                                                                                           ls_inputnodenames,
+                                                                                           array_inputcondition,
+                                                                                           dic_snode_perturbed,
+                                                                                           dic_nodename_i_truthtable,
+                                                                                           dic_nodename_array_regulatorinfo)
+            dic_i_inputcondition_l_basin[i_inputcondition] = l_basin
     
     else:#no input nodes
         array_inputcondition = np.array([])
         print("calculation start")
-        l_integerformset = basin_calculation_for_specific_inputcondition_and_perturbation(ls_inputnodenames, 
-                                                                       ls_not_inputnodenames, 
-                                                                       dic_nodename_i_truthtable, 
-                                                                       dic_nodename_array_regulatorinfo, 
-                                                                       array_perturbed_state, 
-                                                                       matrix_converter,
-                                                                       array_inputcondition)
-        dic_i_inputcondition_l_integerformsets[-1] = l_integerformset
+        l_basin = attractor_basin_calculation_for_specific_inputcondition_perturbation(l_order_nodes,
+                                                                                       ls_inputnodenames,
+                                                                                       array_inputcondition,
+                                                                                       dic_snode_perturbed, 
+                                                                                       dic_nodename_i_truthtable, 
+                                                                                       dic_nodename_array_regulatorinfo)
+                                                                       
+        dic_i_inputcondition_l_basin[-1] = l_basin
     
     #input condition == -1 means no input nodes.
     #attractor calculation for each basin
-    dic_i_inputcondition_l_l_att = {}
-    for i_inputcondition in dic_i_inputcondition_l_integerformsets.keys():
-        ll_atts = []
-        for ifs_basin in dic_i_inputcondition_l_integerformsets[i_inputcondition]:
-            i_state = ifs_basin.show_smallest_element()#i_state don't contain input states and perturbed states
-            if i_inputcondition == -1:
-                array_state_all = np.matmul(DSM.int_to_arraystate(i_state, len(matrix_converter)), matrix_converter) + array_perturbed_state
-            else:
-                array_state_all = np.concatenate([DSM.int_to_arraystate(i_inputcondition, len(ls_inputnodenames)),
-                                              np.matmul(DSM.int_to_arraystate(i_state, len(matrix_converter)), matrix_converter) + array_perturbed_state])
-            l_att = find_attractor_of_initial_state(ls_inputnodenames,
-                                                    ls_not_inputnodenames, 
-                                                    dic_nodename_i_truthtable, 
-                                                    dic_nodename_array_regulatorinfo, 
-                                                    array_state_all)
-            ll_atts.append(l_att)
-        dic_i_inputcondition_l_l_att[i_inputcondition] = ll_atts
-    #dic_i_inputcondition_l_integerformsets[i][j] basin has dic_i_inputcondition_l_l_att[i][j] attractor value
-    #be careful! integer in ifs_basin is state of not input and not perturbed
-    #but integer in l_att is state of all nodes
-    #delete states in attractor from basin set. it is for printout function.
-    for i_inputcondition in dic_i_inputcondition_l_integerformsets.keys():
-        for i, l_att in enumerate(dic_i_inputcondition_l_l_att[i_inputcondition]):
-            for i_state in l_att:
-                array_state = DSM.int_to_arraystate(i_state, (len(ls_inputnodenames)+ len(ls_not_inputnodenames)))
-                i_state_modified = DSM.arraystate_to_int(np.matmul(array_state[-len(ls_not_inputnodenames):], matrix_converter.transpose()))
-                dic_i_inputcondition_l_integerformsets[i_inputcondition][i] -= i_state_modified
-
-    #printout code
-    if b_combine_output_in_one_file: #print out all results in one file.
-        pass
-    else:
-        for i_inputcondition in dic_i_inputcondition_l_integerformsets.keys():
-            if i_inputcondition == -1:
-                s_filename_basin = "att_basin_perturbed.tsv"
-                s_filename_atts = "attractor_information.txt"
-                array_input_state = np.array([])
-            else:
-                s_filename_basin = "att_basin_perturbed_on_input_condition_{}.tsv".format(i_inputcondition)
-                s_filename_atts = "attractor_information_on_input_condition_{}.txt".format(i_inputcondition)
-                array_input_state = DSM.int_to_arraystate(i_inputcondition, len(ls_inputnodenames))
-                
-            s_address_basin = os.path.join(s_address_folder_output, s_filename_basin)
-            s_address_atts = os.path.join(s_address_folder_output, s_filename_atts)
-            ll_atts = []
-            write_output_header(s_address_basin, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
-            for i_code, ifs_basin in enumerate(dic_i_inputcondition_l_integerformsets[i_inputcondition]):
-                l_i_state_att = dic_i_inputcondition_l_l_att[i_inputcondition][i_code]
-                l_atts = [DSM.int_to_arraystate(i_state, len(ls_inputnodenames)+len(ls_not_inputnodenames)) for i_state in l_i_state_att]
-                ll_atts.append(l_atts)
-                iter_states_in_basin = (np.concatenate([array_input_state,np.matmul(DSM.int_to_arraystate(i_state, len(matrix_converter)), matrix_converter) + array_perturbed_state]) for i_state in ifs_basin.as_generator())
-
-                write_output_one_basin_one_att(s_address_basin, i_code, l_atts, iter_states_in_basin)
-            write_attractor_information(s_address_atts, ll_atts, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed)
+    return dic_i_inputcondition_l_basin
         
 
-def basin_calculation_for_specific_inputcondition_and_perturbation(ls_inputnodenames, 
-                                                               ls_not_inputnodenames, 
-                                                               dic_nodename_i_truthtable, 
-                                                               dic_nodename_array_regulatorinfo, 
-                                                               array_perturbed_state, 
-                                                               matrix_converter, 
-                                                               array_input_state):
-                
-    l_integerformset = []
+def attractor_basin_calculation_for_specific_inputcondition_perturbation(l_order_nodes,
+                                                                         ls_inputnodenames,
+                                                                         array_input_state,
+                                                                         dic_perturbed_state,
+                                                                         dic_nodename_i_truthtable,
+                                                                         dic_nodename_array_regulatorinfo):
+    
+    dic_i_index_i_truthtable = {l_order_nodes.index(s_nodename):dic_nodename_i_truthtable[s_nodename] for s_nodename in dic_nodename_i_truthtable.keys()}
+    dic_i_index_array_regulatorinfo = {l_order_nodes.index(s_nodename):dic_nodename_array_regulatorinfo[s_nodename] for s_nodename in dic_nodename_i_truthtable.keys()}
+    #conversion of {nodename:i_truthtable} to {index of node:i_truthtable}
+    for s_perturbend_node in dic_perturbed_state.keys():
+        i_index_perturbed = l_order_nodes.index(s_perturbend_node)
+        if dic_perturbed_state[s_perturbend_node]:#perturbed to 0 or False
+            dic_i_index_i_truthtable[i_index_perturbed] = 0
+        else: #perturbed to 1 or True
+            dic_i_index_i_truthtable[i_index_perturbed] = 1
+        dic_i_index_array_regulatorinfo[i_index_perturbed] = np.array([[0]*0]*(len(l_order_nodes)))
+        #dic_i_index_array_regulatorinfo[i_index_perturbed] will be matrix multiplied to all states. result will always be 0 value.
+    #perturbation information is used to make dic_i_index_i_truthtable and dic_i_index_array_regulatorinfo
+    #perturbation is applied in next_state_calculatrion function throuth dic_i_index_i_truthtable and dic_i_index_array_regulatorinfo
+    dic_input_state = dict(zip(ls_inputnodenames, array_input_state))
+    
+    array_perturbed_state_input_state =  _array_perturbed_state_input_state(l_order_nodes, 
+                                                                            dic_input_state, 
+                                                                            dic_perturbed_state)
+    matrix_converter = _matrix_converter_from_changable_to_all_state(l_order_nodes, 
+                                                                     dic_input_state, 
+                                                                     dic_perturbed_state)
+    array_converter_state_to_int = _get_array_converter_state_to_int(l_order_nodes, 
+                                                                     dic_input_state, 
+                                                                     dic_perturbed_state)
+    
     ifs_all = DSM.Integer_form_numberset(0)#set of all states calculated.
-    for i in range(pow(2,len(matrix_converter))):# len(matrix_converter) is the number of node which is not input node and perturbed node
+    l_basin = []
+    for i in range(pow(2,len(l_order_nodes)-len(ls_inputnodenames)-len(dic_perturbed_state))):
         if ifs_all.has_the_number(i):#check whether this state is already calculated.
             continue
         else:
             i_next = i
-            ifs_trajectory = DSM.Integer_form_numberset(0)#set of states in this trajectory, 0 means empty set.
-            array_all = np.concatenate([array_input_state, np.matmul(DSM.int_to_arraystate(i_next, len(matrix_converter)), matrix_converter) + array_perturbed_state])
+            l_trajectory = []
+            array_all = np.matmul(DSM.int_to_arraystate(i_next, len(matrix_converter)),matrix_converter)+array_perturbed_state_input_state
             while not ifs_all.has_the_number(i_next):
-                ifs_trajectory += i_next
                 ifs_all += i_next
-                array_all = next_state_calculatrion(array_all, ls_not_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo)
-                i_next = int(DSM.arraystate_to_int(np.matmul(array_all[-len(ls_not_inputnodenames):], matrix_converter.transpose())))
-            
-            for ifs_others in l_integerformset: # check whether this trajectory is connected alreaed calculated trajectory.
-                if ifs_others.has_the_number(i_next):#if connected to already calculted one, union two trajectory
-                    ifs_others.union(ifs_trajectory,b_update=True)
+                l_trajectory.append(i_next)
+                array_next = next_state_calculatrion(array_all, dic_i_index_i_truthtable, dic_i_index_array_regulatorinfo)
+                i_next = np.dot(array_next,array_converter_state_to_int)
+                array_all = array_next
+            for basin in l_basin:
+                if basin.has_the_state_integer_form(i_next):
+                    for i_state in l_trajectory:
+                        basin.add_state_integer_form(i_state)
                     break
-            else:#if there is no intersected trajectory, save this trajectory newly.
-                l_integerformset.append(ifs_trajectory)
-
-    return l_integerformset
-            
+            else:
+                basin_new = Basin_states()
+                basin_new.set_input_states(dict(zip(ls_inputnodenames, array_input_state)))
+                basin_new.set_perturbednode_states(dic_perturbed_state)
+                basin_new.set_order_of_nodes(l_order_nodes)
+                l_i_attractor = l_trajectory[l_trajectory.index(i_next):]
+                basin_new.add_attractor_integer_form(l_i_attractor)
+                for i_state in l_trajectory:
+                    basin_new.add_state_integer_form(i_state)
+                l_basin.append(basin_new)
                 
-            
+    return l_basin
             
 
-def perturbed_state_combining_matrix_and_state(ls_not_inputnodenames, dic_s_nodename_i_perturbedstate):
+def next_state_calculatrion(array_state_all, dic_i_nodeindex_i_truthtable, dic_i_nodeindex_array_regulatorinfo):
+    """array_state_all = concatenateion  of array_input_state and array_not_input_state
+    perturbation effect is in dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo"""
+    array_next = array_state_all.copy()
+    
+    for i_index in dic_i_nodeindex_i_truthtable.keys():
+        array_state_regulator = np.matmul(array_state_all, dic_i_nodeindex_array_regulatorinfo[i_index])
+        array_next[i_index] = Boolean_functions.Boolean_function(dic_i_nodeindex_i_truthtable[i_index], array_state_regulator)
+    
+    return array_next
+
+            
+def _get_array_converter_state_to_int(l_order_nodenames, dic_input_state, dic_perturbed_state):
+
+    i_num_changing_nodes = len(l_order_nodenames)-len(dic_input_state)-len(dic_perturbed_state)
+    l_tmp = list(range(i_num_changing_nodes))
+    l_tmp = [pow(2,i) for i in l_tmp]
+    l_tmp.reverse()
+    l_index_inputs = []
+    for s_node in dic_input_state.keys():
+        l_index_inputs.append(l_order_nodenames.index(s_node))
+    l_index_perturbed = []
+    for s_node in dic_perturbed_state.keys():
+        l_index_perturbed.append(l_order_nodenames.index(s_node))
+    l_index_no_change = l_index_inputs+l_index_perturbed
+    if len(l_index_no_change) != (len(l_index_inputs)+len(l_index_perturbed)):
+        print("some input nodes are perturbed!")
+        print("input node list is ",list(dic_input_state.keys()))
+        print("perturbed node list is ",list(dic_perturbed_state.keys()))
+    l_index_no_change.sort(reverse=True)
+    for i in l_index_no_change:
+        l_tmp.insert(i, 0)
+    return np.array(l_tmp, dtype=int)
+            
+
+def _matrix_converter_from_changable_to_all_state(l_order_nodenames, dic_input_state, dic_perturbed_state):
     """when ls_not_inputnodenames = [a,b,c,d,e,f], and dic_s_nodename_i_perturbedstate = {b:0, e:1}
     array_perturbed_state = array([0,0,0,0,1,0])
     matrix_converter is 4*6 matrix. 
     if (a,c,e,f) = (1,0,1,0), then (1,0,1,0 ) @ matrix_converter + array_perturbed_state = (1,0,0,1,1,0)
     it can be used to make overall state from not perturbed nodes state"""
-    li_position_perturbed = [] #i_position of perturbed nodes on the ls_not_inputnodenames
-    array_perturbed_state = np.array([0]*(len(ls_not_inputnodenames)))#perturbation information as array form. 
-    for s_node in dic_s_nodename_i_perturbedstate.keys():
-        i_position = ls_not_inputnodenames.index(s_node)
-        array_perturbed_state[i_position] = dic_s_nodename_i_perturbedstate[s_node]
-        li_position_perturbed.append(i_position)
     
-    matrix_converter = np.array([[0]*len(ls_not_inputnodenames)]*(len(ls_not_inputnodenames)-len(dic_s_nodename_i_perturbedstate)))
-    j=0
-    for i in range(len(ls_not_inputnodenames)):
-        if i in li_position_perturbed:
-            continue
-        matrix_converter[j][i] = 1
-        j+=1
+    i_num_changing_nodes = len(l_order_nodenames)-len(dic_input_state)-len(dic_perturbed_state)
+    l_index_inputs = []
+    for s_node in dic_input_state.keys():
+        l_index_inputs.append(l_order_nodenames.index(s_node))
+    l_index_perturbed = []
+    for s_node in dic_perturbed_state.keys():
+        l_index_perturbed.append(l_order_nodenames.index(s_node))
+    l_index_no_change = l_index_inputs+l_index_perturbed
     
-    return array_perturbed_state, matrix_converter
+    matrix_converter = np.array([[0]*len(l_order_nodenames)]*i_num_changing_nodes, dtype=int)
+    i_row = 0
+    for i_column in range(len(l_order_nodenames)):
+        if i_column not in l_index_no_change:
+            matrix_converter[i_row][i_column] = 1
+            i_row += 1
+    return matrix_converter
 
+def _array_perturbed_state_input_state(l_order_nodenames, dic_input_state, dic_perturbed_state):
+    l_tmp = [0]*len(l_order_nodenames)
+    for s_input in dic_input_state.keys():
+        l_tmp[l_order_nodenames.index(s_input)] = dic_input_state[s_input]
+    for s_perturbed in dic_perturbed_state.keys():
+        l_tmp[l_order_nodenames.index(s_perturbed)] = dic_perturbed_state[s_perturbed]
 
-def next_state_calculatrion(array_state_all, ls_not_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo):
-    """array_state_all = concatenateion  of array_input_state and array_not_input_state
-    perturbation effect is in dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo"""
-    array_next = array_state_all.copy()
-    ls_not_inputnodenames_reverse = ls_not_inputnodenames[::-1]
-    for s_nodename in dic_nodename_i_truthtable.keys():
-        i_logic = dic_nodename_i_truthtable[s_nodename]
-        matrix_regulator_state = dic_nodename_array_regulatorinfo[s_nodename]
-        array_state_regulator = np.matmul(array_state_all, matrix_regulator_state) #sub state of regulators of that node.
-        array_next[-(ls_not_inputnodenames_reverse.index(s_nodename)+1)] = Boolean_functions.Boolean_function(i_logic, array_state_regulator)
-
-    return array_next
-        
-def find_attractor_of_initial_state(ls_inputnodenames,
-                                    ls_not_inputnodenames, 
-                                    dic_nodename_i_truthtable, 
-                                    dic_nodename_array_regulatorinfo,
-                                    iorarray_initial_state):
-    i_num_node = len(ls_inputnodenames) + len(ls_not_inputnodenames)
-    l_i_trajectory = []
-    if type(iorarray_initial_state) == type(1):#type int
-        i_state = iorarray_initial_state
-        array_state = DSM.int_to_arraystate(iorarray_initial_state, i_num_node)
-    else:
-        iorarray_initial_state = np.array(iorarray_initial_state)#if iorarray_initial_state is list or tuple, convert it array
-        i_state = DSM.arraystate_to_int(iorarray_initial_state)
-        array_state = iorarray_initial_state
-
-    while i_state not in l_i_trajectory:
-        l_i_trajectory.append(i_state)
-        array_state = next_state_calculatrion(array_state, ls_not_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo)
-        i_state =  DSM.arraystate_to_int(array_state)
-    l_i_trajectory.append(i_state)
+    return np.array(l_tmp, dtype=int)
     
-    l_att = l_i_trajectory[l_i_trajectory.index(l_i_trajectory[-1])+1:]
-    return l_att
 
-def write_dynamics_information(s_address, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed):
-    with open(s_address, 'w') as file_dynamics_info:
-        file_dynamics_info.write("the number of nodes: "+str((len(ls_inputnodenames)+ len(ls_not_inputnodenames))))
-        file_dynamics_info.write('\n')
-        file_dynamics_info.write("the number of input nodes: "+str(len(ls_inputnodenames)))
-        file_dynamics_info.write('\n')
-        file_dynamics_info.write("the number of node perturbed: "+str(len(dic_snode_perturbed)))
-        file_dynamics_info.write('\n')
-        file_dynamics_info.write("type\tname\tperturbed_state")
-        for s_nodename in ls_inputnodenames:
-            file_dynamics_info.write('\n')
-            file_dynamics_info.write("input\t"+s_nodename)
-        for s_nodename in ls_not_inputnodenames:
-            file_dynamics_info.write('\n')
-            s_tmp = ''
-            if s_nodename in dic_snode_perturbed.keys():
-                file_dynamics_info.write("perturbed\t")
-                s_tmp = str(dic_snode_perturbed[s_nodename])
-            else:
-                file_dynamics_info.write("normal\t")
-            file_dynamics_info.write(s_nodename+'\t')
-            file_dynamics_info.write(s_tmp)
-
-
-def write_output_header(s_address, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed):
-    with open(s_address,'a') as file_output:
-        file_output.write("\tname")
-        for s_node in ls_inputnodenames+ls_not_inputnodenames:
-            file_output.write('\t'+s_node)
-        file_output.write('\n')
+class Basin_states:
+    def __init__(self):
+        self.ifs_states = DSM.Integer_form_numberset(0)
+        self.dic_input_state = {}
+        self.l_order_nodes = []
+        self.dic_perturbednode_state = {}
+        self.array_converter_state_to_integer = None
+        self.matrix_converter_chagable_to_all = None
+        self.array_not_changed_state = None
+        self.i_num_changing_nodes = None
+        self.l_i_attractor = []
+        self.i_num_of_states = 0
+    
+    def set_input_states(self,dic_input_state):
+        self.dic_input_state = dic_input_state
         
-        file_output.write("\ttype")
-        for s_node in ls_inputnodenames:
-            file_output.write("\tinput")
-        for s_node in ls_not_inputnodenames:
-            if s_node in dic_snode_perturbed.keys():
-                file_output.write("\tperturbed")
-            else:
-                file_output.write("\tnormal")
-        file_output.write('\n')
+        self._set_converter_matrix()
+    
+    def set_perturbednode_states(self, dic_perturbednode_state):
+        self.dic_perturbednode_state = dic_perturbednode_state
         
-        file_output.write("basin_code\tstate_type")
-        file_output.write('\n')
+        self._set_converter_matrix()
+    
+    def set_order_of_nodes(self, l_order):
+        self.l_order_nodes = l_order
         
-def write_output_one_basin_one_att(s_address, i_code, l_atts, iter_states_in_basin):
-    with open(s_address,'a') as file_output:
-        for array_state in l_atts:
-            file_output.write('\n')
-            file_output.write(str(i_code))
-            file_output.write('\t')
-            file_output.write("att")
-            for i in array_state:
-                file_output.write('\t')
-                file_output.write(str(int(i)))
+        self._set_converter_matrix()
+    
+    def _set_converter_matrix(self):
+        if not self.l_order_nodes:
+            return
+        else:
+            self.array_converter_state_to_integer = _get_array_converter_state_to_int(self.l_order_nodes, 
+                                                                                      self.dic_input_state, 
+                                                                                      self.dic_perturbednode_state)
             
-        for array_state in iter_states_in_basin:
-            file_output.write('\n')
-            file_output.write(str(i_code))
-            file_output.write('\t')
-            file_output.write("normal")
-            for i in array_state:
-                file_output.write('\t')
-                file_output.write(str(int(i)))
+            self.matrix_converter_chagable_to_all = _matrix_converter_from_changable_to_all_state(self.l_order_nodes, 
+                                                                                      self.dic_input_state, 
+                                                                                      self.dic_perturbednode_state)
+            
+            self.array_not_changed_state = _array_perturbed_state_input_state(self.l_order_nodes, 
+                                                                            self.dic_input_state, 
+                                                                            self.dic_perturbednode_state)
+            
+            self.i_num_changing_nodes = len(self.l_order_nodes) - len(self.dic_input_state) - len(self.dic_perturbednode_state)
+            
+    def add_state(self,array_state):
+        i_before = self.ifs_states.show_integer_form()
+        self.ifs_states += np.dot(array_state, self.array_converter_state_to_integer)
+        if self.ifs_states.show_integer_form() != i_before:
+            self.i_num_of_states += 1
+        
+    def add_state_integer_form(self, i_state):
+        i_before = self.ifs_states.show_integer_form()
+        self.ifs_states += i_state
+        if self.ifs_states.show_integer_form() != i_before:
+            self.i_num_of_states += 1
+    
+    def union_basin(self,basin_to_add):
+        if self.show_order_of_states() != basin_to_add.show_order_of_states():
+            print("node order of added basin is ", self.show_order_of_states())
+            print("node order of adding basing is", basin_to_add.show_order_of_states())
+            raise ValueError("two basins have different node order!")
+        if self.show_input_states() != basin_to_add.show_input_states():
+            print("input nodes of added basin is ", self.show_input_states())
+            print("input nodes of adding basing is", basin_to_add.show_input_states())
+            raise ValueError("two basins have different input states!")
+        if self.show_perturbed_states() != basin_to_add.show_perturbed_states():
+            print("perturbed nodes of added basin is ", self.show_perturbed_states())
+            print("perturbed nodes adding basing is", basin_to_add.show_perturbed_states())
+            raise ValueError("two basins have different perturbed states")
+            
+        self.ifs_states.union(basin_to_add._show_ifs(), b_update=True)
+        
+    def has_the_state(self, array_state):
+        return self.ifs_states.has_the_number(np.dot(array_state, self.array_converter_state_to_integer))
+    
+    def has_the_state_integer_form(self, i_state):
+        return self.ifs_states.has_the_number(i_state)
+    
+    def show_order_of_states(self):
+        return self.l_order_nodes
+    
+    def show_input_states(self):
+        return self.dic_input_state
+    
+    def show_perturbed_states(self):
+        return self.dic_perturbednode_state
+    
+    def show_all_states_list_form(self):
+        return [self._integer_to_state(i_state) for i_state in self.ifs_states.as_generator()]
+    
+    def show_states_except_attractor_list_form(self):
+        ifs_except_attractor = DSM.Integer_form_numberset(self.ifs_states.show_integer_form())
+        for i_state in self.l_i_attractor:
+            ifs_except_attractor -= i_state
+        return [self._integer_to_state(i_state) for i_state in ifs_except_attractor.as_generator()]
+    
+    def show_all_states_generator(self):
+        return (self._integer_to_state(i_state) for i_state in self.ifs_states.as_generator())
+    
+    def show_states_except_attractor_generator(self):
+        ifs_except_attractor = DSM.Integer_form_numberset(self.ifs_states.show_integer_form())
+        for i_state in self.l_i_attractor:
+            ifs_except_attractor -= i_state
+        return (self._integer_to_state(i_state) for i_state in ifs_except_attractor.as_generator())
+    
+    def show_one_state(self):
+        i_state = self.ifs_states.show_smallest_element()
+        return self._integer_to_state(i_state)
+    
+    def _integer_to_state(self, i_state):
+        array_changing_states = np.array(list(("{:>0%d}" %self.i_num_changing_nodes).format(bin(i_state)[2:])), dtype=int)
+        array_all = np.matmul(array_changing_states, self.matrix_converter_chagable_to_all) + self.array_not_changed_state
+        return array_all
+    
+    def _show_ifs(self):
+        return self.ifs_states
+        
+    def add_attractor(self, l_attractor):
+        for array_state in l_attractor:
+            i_state = np.dot(array_state, self.array_converter_state_to_integer)
+            self.l_i_attractor.append(i_state)
+            self.add_state_integer_form(i_state)
+    
+    def add_attractor_integer_form(self, l_i_attractor):
+        self.l_i_attractor = l_i_attractor
+        for i_state in self.l_i_attractor:
+            self.add_state_integer_form(i_state)
+    
+    def show_attractor(self):
+        return [self._integer_to_state(i_state) for i_state in self.l_i_attractor]
+    
+    def is_point_attractor(self):
+        if not self.l_i_attractor:# self.l_i_attractor == []
+            raise ValueError("attractor is not yet entered")
+        return len(self.l_i_attractor) == 1
+    
+    
+
                 
-def write_attractor_information(s_address, ll_atts, ls_inputnodenames, ls_not_inputnodenames, dic_snode_perturbed):
-    with open(s_address, 'w') as file_att:
-        file_att.write("the number of attractors: ")
-        file_att.write(str(len(ll_atts)))
-        file_att.write('\n')
         
-        ll_pointatt = []
-        ll_cyclicatt = []
-        for l_att in ll_atts:
-            if len(l_att) == 1:
-                ll_pointatt.append(l_att)
-            else:
-                ll_cyclicatt.append(l_att)
         
-        file_att.write("the numbor of point attractors: ")
-        file_att.write(str(len(ll_pointatt)))
-        file_att.write('\n')
-        file_att.write("the number of cyclic attractors: ")
-        file_att.write(str(len(ll_cyclicatt)))
-        file_att.write('\n')
-        
-        file_att.write("\tname")
-        for s_node in ls_inputnodenames+ls_not_inputnodenames:
-            file_att.write('\t'+s_node)
-        file_att.write('\n')
-        
-        file_att.write("code\ttype")
-        for s_node in ls_inputnodenames:
-            file_att.write("\tinput")
-        for s_node in ls_not_inputnodenames:
-            if s_node in dic_snode_perturbed.keys():
-                file_att.write("\tperturbed")
-            else:
-                file_att.write("\tnormal")
-        file_att.write('\n')
-        
-        i_code = 0
-        for l_point in ll_pointatt:
-            file_att.write(str(i_code))
-            for array_state in l_point:
-                file_att.write('\t')
-                file_att.write("point")
-                for i in array_state:
-                    file_att.write('\t')
-                    file_att.write(str(int(i)))
-                file_att.write('\n')
-            i_code+=1
-        for l_cycle in ll_cyclicatt:
-            file_att.write(str(i_code))
-            for array_state in l_cycle:
-                file_att.write('\t')
-                file_att.write("cycle")
-                for i in array_state:
-                    file_att.write('\t')
-                    file_att.write(str(int(i)))
-                file_att.write('\n')
-            i_code+=1
         

@@ -216,23 +216,20 @@ class Network_model:
         
         
     
-    def get_basin_attractor_under_perturbation_Boolean_synchronous_update(self, lt_s_node_i_perturbation=None, b_make_output_in_onefile=False):
+    def get_basin_attractor_under_perturbation_Boolean_synchronous_update(self, lt_s_node_i_perturbation=None):
         """lt_s_node_i_perturbatopm == [(s_nodename, i_perturbed_states), , ,]
         before doing this function, define input nodes"""
         if not lt_s_node_i_perturbation:
             lt_s_node_i_perturbation = []
-            
-        if self.show_address_of_network_folder() == "Not yet maden":
-            raise ValueError("before doing 'get_basin_attractor_under_perturbation_Boolean_synchronous_update' method, make the folder")
-            
-        ls_inputnodenames, ls_not_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo = Boolean_simulation.extract_dynamics_information_from_network(self)
-        Boolean_simulation.basin_calculation_for_specific_perturbation(ls_inputnodenames, 
-                                                                       ls_not_inputnodenames, 
+ 
+        l_order_nodes, ls_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo = Boolean_simulation.extract_dynamics_information_from_network(self)
+        x = Boolean_simulation.basin_calculation_for_specific_perturbation(l_order_nodes,
+                                                                       ls_inputnodenames,
                                                                        dic_nodename_i_truthtable, 
                                                                        dic_nodename_array_regulatorinfo, 
-                                                                       lt_s_node_i_perturbation, 
-                                                                       self.show_address_of_network_folder(), 
-                                                                       b_make_output_in_onefile)
+                                                                       lt_s_node_i_perturbation)
+        
+        return x
     
     def find_FVS(self):
         ll_FVS = FVS_analysis.FVS_finding(self.show_nodenames(), self.show_links_list_of_tuple())
