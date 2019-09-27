@@ -7,7 +7,7 @@ Created on Thu Apr 11 19:31:21 2019
 import itertools
 from . import FVS_analysis, SCC_analysis, basic_topology_functions
 
-def find_all_downstream_from_seed(lt_links, s_seed, ls_ends=[]):
+def find_all_downstream_from_seed(lt_links, s_seed, ls_ends=[], b_downstream_ended_only_ls_ends=False):
     """this function find all possible downstream of s_seed.
     downstreams calculation ends when there is no link to connect or it reachs the element of ls_ends.
     ***caution!! lt_links should be acyclic or there is no feedback between s_seed and elements of ls_ends ***
@@ -29,8 +29,11 @@ def find_all_downstream_from_seed(lt_links, s_seed, ls_ends=[]):
             llt_downstreams.append(lt_downstream)
             continue
         if lt_downstream[-1][-1] not in dic_s_start_l_links.keys():
-            llt_downstreams.append(lt_downstream)
-            continue
+            if b_downstream_ended_only_ls_ends:
+                continue
+            else:
+                llt_downstreams.append(lt_downstream)
+                continue
         for t_link in dic_s_start_l_links[lt_downstream[-1][-1]]:
             llt_stack.append(lt_downstream+[t_link])
     
