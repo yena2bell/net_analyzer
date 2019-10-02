@@ -212,7 +212,10 @@ class Network_model:
         """find minimum dominating set. i_covering_distance is the distance one MDS node can cover
         return list of MDS nodes list.
         every node of network are either MDS node or downstream node of some MDS node within distance i_covering_distance"""
-        return MDS_analysis.find_MDS_directednet(self.show_nodenames(), self.show_links_list_of_tuple(False))
+        return MDS_analysis.find_MDS_directednet_reversely(self.show_nodenames(), self.show_links_list_of_tuple(False), i_covering_distance)
+    
+    def find_DS(self, i_covereing_distance=1):
+        return MDS_analysis.find_DS_directednet(self.show_nodenames(), self.show_links_list_of_tuple(False), i_covereing_distance)
         
         
     
