@@ -37,7 +37,7 @@ class Network_model:
         for s_node in ls_nodenames:
             self.add_node(s_node)
         for t_edge in lt_edges:
-            self.add_directed_link(t_edge[0],t_edge[1])
+            self.add_directed_link(t_edge[0],t_edge[-1])
     
     def add_nodes_edges_random_scale_free_connected(self, i_node_num, i_parameter=2):
         while True:
@@ -91,9 +91,21 @@ class Network_model:
                     print(str(node)," marked as input node")
                 else:
                     print(str(node))
+                    
+    def show_links(self):
+        return self.l_links
     
     def show_address_of_network_folder(self):
         return self.s_address_net_folder
+    
+    def show_dynamics_information(self):
+        dic_nodename_t_truthtable_nodeorder = {}
+        for node in self.show_node():
+            t_truthtable_nodeorder = (node.show_integerform_of_Boolean_truthtable(), node.show_orderedname_regulators_truthtable())
+            dic_nodename_t_truthtable_nodeorder[str(node)] = t_truthtable_nodeorder
+        
+        return dic_nodename_t_truthtable_nodeorder
+            
     
     def show_SCC_decomposition(self):
         ll_SCC = SCC_analysis.decompose_SCC(self.show_nodenames(), self.show_links_list_of_tuple())
@@ -169,6 +181,15 @@ class Network_model:
             return self.l_nodes[l_s_nodenames.index(s_nodename)]
         except ValueError:
             print("node having such name doesn't exist")
+            
+    def select_links_with_selected_start_end(self, s_nodename_start, s_nodename_end):
+        l_links_with_selected_start_end = []
+        for link in self.show_links():
+            if str(link.show_start_node()) == s_nodename_start:
+                if str(link.show_end_node()) == s_nodename_end:
+                    l_links_with_selected_start_end.append(link)
+        
+        return l_links_with_selected_start_end        
     
     def add_directed_link(self, s_nodename_start, s_nodename_end, modality=None):
         """modality is True->activation link, False-> inhibitory link"""
@@ -226,13 +247,13 @@ class Network_model:
             lt_s_node_i_perturbation = []
  
         l_order_nodes, ls_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo = Boolean_simulation.extract_dynamics_information_from_network(self)
-        x = Boolean_simulation.basin_calculation_for_specific_perturbation(l_order_nodes,
+        dic_i_inputcondition_l_basin = Boolean_simulation.basin_calculation_for_specific_perturbation(l_order_nodes,
                                                                        ls_inputnodenames,
                                                                        dic_nodename_i_truthtable, 
                                                                        dic_nodename_array_regulatorinfo, 
                                                                        lt_s_node_i_perturbation)
         
-        return x
+        return dic_i_inputcondition_l_basin
     
     def find_FVS(self):
         ll_FVS = FVS_analysis.FVS_finding(self.show_nodenames(), self.show_links_list_of_tuple())

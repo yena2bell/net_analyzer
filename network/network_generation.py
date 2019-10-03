@@ -99,7 +99,7 @@ def check_meaningless_interaction(i_Booleantable, i_numinteraction):
 
 
 def check_modality_condition(i_Booleantable, dic_predecessor_b_modality, l_order_of_input):
-    """dic_i_predecessor_b_modality {i, True or false}
+    """dic_i_predecessor_b_modality {i: True or false}
     if j th node is checked, i->j should be activation if dic_i_predecessor_b_modality[i] == True
     i->j should be suppression if dic_i_predecessor_b_modality[i] == False"""
     i_numinteraction = len(l_order_of_input)
@@ -113,7 +113,8 @@ def check_modality_condition(i_Booleantable, dic_predecessor_b_modality, l_order
         while k < i_numtableline and b_flag_modality_satisfying_interaction:
             b_jthline = (i_Booleantable>>j)%2#l_order_of_input[i_numinteraction-i-1] has value 0
             b_kthline = (i_Booleantable>>k)%2#l_order_of_input[i_numinteraction-i-1] has value 1
-            if dic_predecessor_b_modality[l_order_of_input[i_numinteraction-i-1]]: #True: activation 
+            #if dic_predecessor_b_modality[l_order_of_input[i_numinteraction-i-1]]: #True: activation
+            if dic_predecessor_b_modality[l_order_of_input[i]]: #True: activation 
                 if b_jthline and not b_kthline:
                     b_flag_modality_satisfying_interaction = False
             else:#b_modality == False: inhibition
