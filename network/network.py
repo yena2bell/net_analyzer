@@ -22,7 +22,7 @@ class Network_model:
         self.l_nodes = [] #list of Nodes objects
         self.l_links = [] #list of Links objects
         
-        self.l_sourcenodes = []
+        self.l_sourcenodes = []#it is not input node. input node should be marked.
         self.l_sinknodes = []
         
         self.s_address_net_folder = "Not yet maden"
@@ -78,6 +78,12 @@ class Network_model:
     
     def show_output_nodes(self):
         return [node for node in self.l_nodes if node.is_output_node()]
+    
+    def show_source_nodes(self):
+        return self.l_sourcenodes
+    
+    def show_sink_nodes(self):
+        return self.l_sinknodes
     
     def show_nodes_without_Boolean_truthtable(self):
         print("source nodes without Boolean truthtable integer form")
@@ -240,20 +246,31 @@ class Network_model:
         
         
     
-    def get_basin_attractor_under_perturbation_Boolean_synchronous_update(self, lt_s_node_i_perturbation=None):
+    def get_basin_attractor_under_perturbation_Boolean_synchronous_update(self, dic_perturbednode_state={}):
         """lt_s_node_i_perturbatopm == [(s_nodename, i_perturbed_states), , ,]
         before doing this function, define input nodes"""
-        if not lt_s_node_i_perturbation:
-            lt_s_node_i_perturbation = []
  
-        l_order_nodes, ls_inputnodenames, dic_nodename_i_truthtable, dic_nodename_array_regulatorinfo = Boolean_simulation.extract_dynamics_information_from_network(self)
-        dic_i_inputcondition_l_basin = Boolean_simulation.basin_calculation_for_specific_perturbation(l_order_nodes,
-                                                                       ls_inputnodenames,
-                                                                       dic_nodename_i_truthtable, 
-                                                                       dic_nodename_array_regulatorinfo, 
-                                                                       lt_s_node_i_perturbation)
-        
+        dic_i_inputcondition_l_basin = Boolean_simulation.attractor_basin_calculation_for_specific_perturbation(self,
+                                                                                                                dic_perturbednode_state)
         return dic_i_inputcondition_l_basin
+    
+    def get_basin_attractor_under_perturbation_specific_input_Boolean_synchronous_update(self, dic_input_state, dic_perturbednode_state={}):
+        l_basins = Boolean_simulation.attractor_basin_calculation_for_specific_inputcondition_perturbation(self,
+                                                                                                           dic_input_state,
+                                                                                                           dic_perturbednode_state)
+        return l_basins
+    
+    def get_attractor_under_perturbation_specific_input_Boolean_synchronous_update(self,
+                                                                                   dic_input_state, 
+                                                                                   dic_perturbednode_state={},
+                                                                                   l_initial_state=None,
+                                                                                   i_initial_random_seed=None):
+        l_array_attractor = Boolean_simulation.attractor_calculation_for_specific_inputcondition_perturbation(self,
+                                                                                                            dic_input_state,
+                                                                                                            dic_perturbednode_state,
+                                                                                                            l_initial_state,
+                                                                                                            i_initial_random_seed)
+        return l_array_attractor
     
     def find_FVS(self):
         ll_FVS = FVS_analysis.FVS_finding(self.show_nodenames(), self.show_links_list_of_tuple())

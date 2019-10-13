@@ -150,6 +150,16 @@ class Node:
         self.Bool_outputnode = False
 
     def is_output_node(self):
-        return self.Bool_outputnode            
-            
-            
+        return self.Bool_outputnode
+    
+    def is_source_node(self):
+        if self.l_inwardlinks:
+            return False
+        else:
+            return True
+        
+    def is_sink_node(self):
+        if self.l_outwardlinks:
+            return False
+        else:
+            return True
