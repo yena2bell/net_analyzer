@@ -8,53 +8,40 @@ Created on Thu Aug 29 21:04:25 2019
 
 
 from .Boolean_functions import get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_truthtable as get_min_Boolean_eq
-from ..network import network
 from ..topology_analysis.feedback_analysis import find_all_feedback
 from ..topology_analysis.FVS_analysis import conversion_of_combination_num_to_list_of_comb
 from ..support_functions.combination_functions import calculate_next_combination
 
-s_suffix_of_on_node = "_1"
-s_suffix_of_off_node = "_0" #if s_suffix_of_on_node[-len(s_suffix_of_off_node):] == s_suffix_of_off_node then occurs bug. vice versa
-s_andnode_connector = "__AND__"
-
-def make_expanded_network_using_Boolean_truthtable(networkmodel):
-    networkmodel_expanded = network.Expanded_network("expanded_network_of_"+str(networkmodel))
+def make_expanded_network_using_Boolean_truthtable(networkmodel, networkmodel_expanded):
     for s_nodename in networkmodel.show_nodenames():
         if ' ' in s_nodename:
             raise ValueError("there is node name with space. to make expanded network, all node name has no space")
-        networkmodel_expanded.add_node(s_nodename+s_suffix_of_on_node)
-        networkmodel_expanded.add_node(s_nodename+s_suffix_of_off_node)
+        networkmodel_expanded.add_node(s_nodename+networkmodel_expanded.show_suffix_on())
+        networkmodel_expanded.add_node(s_nodename+networkmodel_expanded.show_suffix_off())
     
-    l_node_expanded_except_andnode = list(networkmodel_expanded.show_node())
-    for node_expanded in l_node_expanded_except_andnode:
+    for node_expanded in networkmodel_expanded.show_single_nodes():
         print(str(node_expanded)+"'s calculation starts")
         l_logic_equation = get_minimized_Boolean_function_node_using_QM(networkmodel, node_expanded)
         add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expanded, node_expanded, l_logic_equation)
     
     #delete duplicated andnode. 
     #for example, if 'a_0__AND__b_0' and 'b_0__AND__a_0' nodes exist together, delete one.
-    for i, node_expanded in enumerate(networkmodel_expanded.show_node()):
-        if s_andnode_connector in str(node_expanded):
-            set_coponents = set(str(node_expanded).split(s_andnode_connector))
-            for node_compared in networkmodel_expanded.show_node()[i+1:]:
-                if s_andnode_connector in str(node_compared):
-                    set_components_compared = set(str(node_compared).split(s_andnode_connector)) 
-                    if set_coponents == set_components_compared:
-                        ls_node_regulating = node_expanded.show_regulating_nodenames()
-                        for s_node in node_compared.show_regulating_nodenames():
-                            if s_node not in ls_node_regulating:
-                                networkmodel_expanded.add_directed_link(str(node_expanded), s_node)
-                        networkmodel_expanded.delete_node(str(node_compared))
-                else:
-                    continue
-        else:
-            continue
-            
-    return networkmodel_expanded
+    for i, node_expanded in enumerate(networkmodel_expanded.show_composite_nodes()):
+        set_coponents = set(node_expanded.show_list_of_elements_in_composite())
+        for node_compared in networkmodel_expanded.show_composite_nodes()[i+1:]:
+            set_components_compared = set(node_compared.show_list_of_elements_in_composite())
+            if set_coponents == set_components_compared:
+                ls_node_regulating = node_expanded.show_regulating_nodenames()
+                for s_node in node_compared.show_regulating_nodenames():
+                    if s_node not in ls_node_regulating:
+                        networkmodel_expanded.add_directed_link(str(node_expanded), s_node)
+                networkmodel_expanded.delete_node(str(node_compared))
+
 
 def get_minimized_Boolean_function_node_using_QM(networkmodel, node_of_expandedmodel):
+    """node_of_expandedmodel should be single node(not composite node)"""
     #print(str(node_of_expandedmodel))
-    s_node_originalmodel = str(node_of_expandedmodel)[:-len(s_suffix_of_on_node)] if str(node_of_expandedmodel)[-len(s_suffix_of_on_node):] == s_suffix_of_on_node else str(node_of_expandedmodel)[:-len(s_suffix_of_off_node)]
+    s_node_originalmodel = node_of_expandedmodel.show_original_name()
     #print(s_node_originalmodel)
     node_of_originalmodel = networkmodel.select_node(s_node_originalmodel)
     l_orderd_name_regulators = node_of_originalmodel.show_orderedname_regulators_truthtable()
@@ -66,21 +53,18 @@ def get_minimized_Boolean_function_node_using_QM(networkmodel, node_of_expandedm
     
     if not l_orderd_name_regulators:#when this node is source node
         return None
-    
-    if str(node_of_expandedmodel)[-len(s_suffix_of_on_node):] == s_suffix_of_on_node:
-        l_logic_equation = get_min_Boolean_eq(i_Boolean_truthtable, l_orderd_name_regulators, True)
-    elif str(node_of_expandedmodel)[-len(s_suffix_of_off_node):] == s_suffix_of_off_node:
-        i_Boolean_truthtable = (pow(2,pow(2,len(l_orderd_name_regulators))) -1) - i_Boolean_truthtable# not equation of Boolean logic
+    if node_of_expandedmodel.is_on_state_node():
         l_logic_equation = get_min_Boolean_eq(i_Boolean_truthtable, l_orderd_name_regulators, True)
     else:
-        raise ValueError("incorrect suffix to the expanded network node!")
+        i_Boolean_truthtable = (pow(2,pow(2,len(l_orderd_name_regulators))) -1) - i_Boolean_truthtable# not equation of Boolean logic
+        l_logic_equation = get_min_Boolean_eq(i_Boolean_truthtable, l_orderd_name_regulators, True)
 
     #s_logic_equation is like '((NOT B) OR (NOT A))' or '((a AND b) OR c)' or  '(a AND b AND c)' ....
     #print(str(node_of_expandedmodel), l_logic_equation)
     return l_logic_equation
 
 def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expanded, node_of_expandedmodel, l_logic_equation):
-    s_node_originalmodel = str(node_of_expandedmodel)[:-len(s_suffix_of_on_node)] if str(node_of_expandedmodel)[-len(s_suffix_of_on_node):] == s_suffix_of_on_node else str(node_of_expandedmodel)[:-len(s_suffix_of_off_node)]
+    s_node_originalmodel = node_of_expandedmodel.show_original_name()
     node_of_originalmodel = networkmodel.select_node(s_node_originalmodel)
     if l_logic_equation == None:#when this node is source node
         return
@@ -90,10 +74,11 @@ def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expa
         ls_nodes_regulator = list(set(ls_nodes_regulator))#delete duplication
         if str(node_of_originalmodel) in ls_nodes_regulator:#self loop
             networkmodel_expanded.add_directed_link(str(node_of_expandedmodel),str(node_of_expandedmodel))
+            networkmodel_expanded.add_directed_link(node_of_expandedmodel.show_name_complementary(),str(node_of_expandedmodel))
             ls_nodes_regulator.pop(ls_nodes_regulator.index(str(node_of_originalmodel)))
         for s_node in ls_nodes_regulator:
-            networkmodel_expanded.add_directed_link(s_node+s_suffix_of_on_node, str(node_of_expandedmodel))
-            networkmodel_expanded.add_directed_link(s_node+s_suffix_of_off_node, str(node_of_expandedmodel))
+            networkmodel_expanded.add_directed_link(s_node+networkmodel_expanded.show_suffix_on(), str(node_of_expandedmodel))
+            networkmodel_expanded.add_directed_link(s_node+networkmodel_expanded.show_suffix_off(), str(node_of_expandedmodel))
     elif l_logic_equation == ['0']:
         pass#no upper node. any expanded node can turn on this node.
     else:
@@ -104,7 +89,7 @@ def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expa
             s_logic_part = l_logic_equation.pop(0)
             if not (s_logic_part == ')'):
                 if s_logic_part not in ['(',"NOT","AND","OR"]:
-                    s_logic_part = s_logic_part+s_suffix_of_on_node#make all node to be on node. if NOT exist, change on node to off node
+                    s_logic_part = s_logic_part+networkmodel_expanded.show_suffix_on()#make all node to be on node. if NOT exist, change on node to off node
                 l_stack.append(s_logic_part)
             else:
                 l_temp = []
@@ -115,11 +100,11 @@ def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expa
                 l_temp.reverse()
                 if (l_temp[0] == "NOT") and (len(l_temp) == 2):
                     s_tmp = l_temp[1]
-                    s_tmp = s_tmp[:-len(s_suffix_of_on_node)]
-                    l_stack.append(s_tmp+s_suffix_of_off_node)
+                    s_tmp = s_tmp[:-len(networkmodel_expanded.show_suffix_on())]
+                    l_stack.append(s_tmp+networkmodel_expanded.show_suffix_off())
                 elif ("AND" in l_temp) and not ("OR" in l_temp):
                     s_tmp = ''.join(l_temp)
-                    s_tmp = s_tmp.replace("AND",s_andnode_connector)
+                    s_tmp = s_tmp.replace("AND",networkmodel_expanded.show_andnode_connector())
                     l_stack.append(s_tmp)
                 elif ("OR" in l_temp) and not ("AND" in l_temp):
                     while l_temp:
@@ -132,16 +117,22 @@ def add_and_connect_upper_nodes_to_expanded_node(networkmodel, networkmodel_expa
         for s_node_new in l_stack:
             networkmodel_expanded.add_node(s_node_new)
             networkmodel_expanded.add_directed_link(s_node_new, str(node_of_expandedmodel))
-            if s_andnode_connector in s_node_new:
-                for s_node_upper in s_node_new.split(s_andnode_connector):
+            if networkmodel_expanded.show_andnode_connector() in s_node_new:
+                for s_node_upper in s_node_new.split(networkmodel_expanded.show_andnode_connector()):
                     #print(s_node_new)
                     networkmodel_expanded.add_directed_link(s_node_upper, s_node_new)
                     #connect newly made andnodes to upper nodes
 
-def find_stable_motifs_using_expanded_net(ls_nodenames, lt_links):
+def find_stable_motifs_using_expanded_net(expanded_network):
+    ls_nodenames = expanded_network.show_nodenames()
+    lt_links = expanded_network.show_links_list_of_tuple()
     ll_stable_motif = []
     ll_feedbacks = find_all_feedback(ls_nodenames, lt_links)
     print("the number of feedbacks in expanded network is ", len(ll_feedbacks))
+    
+    s_suffix_of_on_node = expanded_network.show_suffix_on()
+    s_suffix_of_off_node = expanded_network.show_suffix_off() #if s_suffix_of_on_node[-len(s_suffix_of_off_node):] == s_suffix_of_off_node then occurs bug. vice versa
+    s_andnode_connector = expanded_network.show_andnode_connector()
     
     def check_contradict_state_of_same_node_in_feedback(l_feedback):
         """if node_up, node_down co-exist in the l_feedback, return False

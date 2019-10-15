@@ -163,3 +163,64 @@ class Node:
             return False
         else:
             return True
+        
+class Expanded_node(Node):
+    def __init__(self, s_name):
+        Node.__init__(self, s_name)
+        self.s_nodename_original = None
+        self.b_on = None
+        #attributes for single node
+        
+        self.b_composite_node = None
+        self.l_s_expandednode_component = None
+        #attributes for composite node
+        
+        self.s_suffix_of_on_node = None
+        self.s_suffix_of_off_node = None
+        self.s_andnode_connector = None
+        
+    def _set_suffix_connector(self, network_expanded):
+        self.s_suffix_of_on_node = network_expanded.show_suffix_on()
+        self.s_suffix_of_off_node = network_expanded.show_suffix_off()
+        self.s_andnode_connector = network_expanded.show_andnode_connector()
+        
+        if self.s_andnode_connector in self.s_name:#composite node
+            self.b_composite_node = True
+            self.l_s_expandednode_component = self.s_name.split(self.s_andnode_connector)
+        else:#single node
+            self.b_composite_node = False
+            if self.s_name[-len(self.s_suffix_of_on_node):] == self.s_suffix_of_on_node:
+                self.b_on = True
+                self.s_nodename_original = self.s_name[:-len(self.s_suffix_of_on_node)]
+            elif self.s_name[-len(self.s_suffix_of_off_node):] == self.s_suffix_of_off_node:
+                self.b_on = False
+                self.s_nodename_original = self.s_name[:-len(self.s_suffix_of_off_node)]
+            else:
+                raise ValueError(self.s_name+" is wrong suffix or composite node connector!")
+    
+    def show_original_name(self):
+        return self.s_nodename_original
+    
+    def is_composite_node(self):
+        return self.b_composite_node
+    
+    def show_name_complementary(self):
+        if self.b_composite_node:
+            return None
+        else:
+            if self.b_on:
+                return self.s_nodename_original+self.s_suffix_of_off_node
+            else:
+                return self.s_nodename_original+self.s_suffix_of_on_node
+            
+    def show_list_of_elements_in_composite(self):
+        if self.is_composite_node():
+            return self.l_s_expandednode_component
+        else:
+            raise ValueError(str(self)+" is not composite node but 'show_list_of_elements_in_composite' is called!")
+            
+    def is_on_state_node(self):
+        if self.is_composite_node():
+            raise ValueError(str(self)+" is composite node but 'is_on_state_node' method is called!")
+        else:
+            return self.b_on

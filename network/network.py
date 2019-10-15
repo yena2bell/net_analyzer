@@ -8,7 +8,7 @@ import os
 import pickle
 
 print(__name__)
-from .node import Node
+from .node import Node, Expanded_node
 from .link import Directed_link
 from ..dynamics import expanded_network, Boolean_simulation
 from ..topology_analysis import feedback_analysis, basic_topology_functions,SCC_analysis, FVS_analysis, MDS_analysis
@@ -220,7 +220,8 @@ class Network_model:
             
         
     def make_expanded_network(self):#not yet completed
-        networkmodel_expanded = expanded_network.make_expanded_network_using_Boolean_truthtable(self)
+        networkmodel_expanded = Expanded_network("expanded_network_of_"+str(self))
+        expanded_network.make_expanded_network_using_Boolean_truthtable(self, networkmodel_expanded)
         if self.s_address_net_folder == "Not yet maden":
             pass
         else:
@@ -293,10 +294,90 @@ class Network_model:
 
 
 class Expanded_network(Network_model):
+    def __init__(self, s_netname):
+        Network_model.__init__(self, s_netname)
+        self.s_suffix_of_on_node = "_1"
+        self.s_suffix_of_off_node = "_0" #if s_suffix_of_on_node[-len(s_suffix_of_off_node):] == s_suffix_of_off_node then occurs bug. vice versa
+        self.s_andnode_connector = "__AND__"
+        
+        self.l_nodes_single = []
+        self.l_nodes_composite = []
+        
     def find_stable_motifs_using_expanded_net(self):
-        l_nodenames = self.show_nodenames()
-        lt_links = self.show_links_list_of_tuple()
-        ll_stable_motifs = expanded_network.find_stable_motifs_using_expanded_net(l_nodenames, lt_links)
+        ll_stable_motifs = expanded_network.find_stable_motifs_using_expanded_net(self)
         
         return ll_stable_motifs
+    
+    def show_suffix_on(self):
+        return self.s_suffix_of_on_node
+    
+    def show_suffix_off(self):
+        return self.s_suffix_of_off_node
+    
+    def show_andnode_connector(self):
+        return self.s_andnode_connector
+    
+    def add_node(self, s_node_name):
+        """add new node to the network.
+        if there exist a node with same name,
+        raise error"""
+        l_s_nodenames = self.show_nodenames()
+        if s_node_name in l_s_nodenames:
+            print("node having same name already exists!")
+            print("no change to the model")
+            return
+        node_new = Expanded_node(s_node_name)
+        node_new._set_suffix_connector(self)
+        self.l_nodes.append(node_new)
+        self.l_sourcenodes.append(node_new)
+        self.l_sinknodes.append(node_new)
+        #same as Network_model.add_node(s_node_name) except Node->Expanded_node
+        
+        if node_new.is_composite_node():#composite node
+            self.l_nodes_composite.append(node_new)
+        else:
+            self.l_nodes_single.append(node_new)
             
+    def delete_node(self, s_node_name):
+        """delete node and connected edges
+        delete in l_nodes, l_sourcenodes, l_sinknodes
+        delete connected link information from connected other nodes
+        and check the connected nodes are sourcenode or sinknode"""
+        l_s_nodenames = self.show_nodenames()
+        if s_node_name not in l_s_nodenames:
+            print("node having same name doesn't exists!")
+            print("no change to the model")
+            return
+        node_to_delete = self.select_node(s_node_name)
+        #deletion to connected node objects
+        links_connected = list(node_to_delete.show_connected_links())
+        for link in links_connected:
+            self.l_links.pop(self.l_links.index(link))
+            if link.show_end_node() == node_to_delete:
+                link.show_start_node().delete_outwardlink(link)
+                if not link.show_start_node().show_outwardlinks():
+                    self.l_sinknodes.append(link.show_start_node())
+            else:
+                link.show_end_node().delete_inwardlink(link)
+                if not link.show_end_node().show_inwardlinks():
+                    self.l_sourcenodes.append(link.show_end_node())
+                    
+        self.l_nodes.pop(self.l_nodes.index(node_to_delete))
+        try: self.l_sourcenodes.pop(self.l_sourcenodes.index(node_to_delete))
+        except: pass
+        try: self.l_sinknodes.pop(self.l_sinknodes.index(node_to_delete))
+        except: pass
+        #same to Network_model.delete_node(s_node_name)
+        
+        if node_to_delete.is_composite_node():#composite node
+            i_position = [str(node) for node in self.l_nodes_composite].index(str(node_to_delete))
+            self.l_nodes_composite.pop(i_position)
+        else:
+            i_position = [str(node) for node in self.l_nodes_single].index(str(node_to_delete))
+            self.l_nodes_single.pop(i_position)
+        
+    def show_single_nodes(self):
+        return self.l_nodes_single
+    
+    def show_composite_nodes(self):
+        return self.l_nodes_composite
