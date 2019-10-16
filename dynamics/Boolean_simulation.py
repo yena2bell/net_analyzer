@@ -230,14 +230,26 @@ def attractor_calculation_for_specific_inputcondition_perturbation(network_objec
         i_num_of_nodes = len(dynamics_data.show_nodename_order())
         i_random = random.randint(0, pow(2,i_num_of_nodes)-1)#randint contains pow(2,i_num_of_nodes)-1
         initial_state = DSM.int_to_arraystate(i_random, i_num_of_nodes)
-        
+    
+    dic_initial_state = dict(zip(dynamics_data.show_nodename_order(), initial_state))
+    for s_input in dic_input_state.keys():
+        dic_initial_state[s_input] = dic_input_state[s_input]
+    for s_perturbed in dic_perturbed_state.keys():
+        dic_initial_state[s_perturbed] = dic_perturbed_state[s_perturbed]
+    print("calculate attractor starting at ",dic_initial_state)
+    
+    object_attractor = _attractor_calculation(dynamics_data, initial_state)
+    
+    return object_attractor
+
+def _attractor_calculation(dynamics_data, initial_state):
+    """apply input condition and perturbaion to initial state, and find attractor of that initial state
+    initial state is array or list form state which has states of all nodes"""
     object_attractor = Attractor_synchronous_Boolean(dynamics_data)
     l_trajectory = []
-    array_state = np.array(initial_state)
+    array_state = np.array(initial_state, dtype=int)#convert list or tuple to numpy array
     array_state = dynamics_data.apply_input_condition(array_state)
     array_state = dynamics_data.apply_perturbation(array_state)
-    dic_initial_state = dict(zip(dynamics_data.show_nodename_order(), array_state))
-    print("calculate attractor starting at ",dic_initial_state)
     i_state = object_attractor._state_to_integer(array_state)
     while not (i_state in l_trajectory):
         l_trajectory.append(i_state)
@@ -249,6 +261,47 @@ def attractor_calculation_for_specific_inputcondition_perturbation(network_objec
     
     return object_attractor
 
+
+def attractors_calculation_from_ramdom_initial_states_iteratively(network_object,
+                                                                  dic_input_state,
+                                                                  dic_perturbed_state={},
+                                                                  i_maximum_interval_without_new_att=10000,
+                                                                  i_maximum_calculation=None,
+                                                                  i_random_seed=None):
+    """if i_maximum_calculation=None, then i_maximum_calculation is 1/10 of all initial states"""
+    dynamics_data = Dynamics_condition_data(network_object)
+    dynamics_data.set_perturbation(dic_perturbed_state)
+    dynamics_data.set_input_condition(dic_input_state)
+    converter_info = Object_state_saving_integer_form(dynamics_data)
+    i_all_initial_changable = pow(2,dynamics_data.show_number_of_changale_nodes())
+    
+    if type(i_random_seed) != type(None):
+        random.seed(i_random_seed)
+    if type(i_maximum_calculation) == type(None):
+        i_maximum_calculation = int(i_all_initial_changable/10)
+        
+    ifs_initials_calculated = DSM.Integer_form_numberset(0)
+    l_attractors = []
+    li_count_new_att = [0]#for error proof in (i_count - li_count_new_att[-1]) code (while argument)
+    i_count = 0 #the number of initial states calculated.
+    
+    while (i_count <= i_maximum_calculation) and ((i_count - li_count_new_att[-1]) <= i_maximum_interval_without_new_att):
+        i_initial = random.randrange(0,i_all_initial_changable)
+        if ifs_initials_calculated.has_the_number(i_initial):
+            continue
+        else:
+            i_count += 1
+            ifs_initials_calculated += i_initial
+            array_initial = converter_info._integer_to_state(i_initial)
+            obj_attractor = _attractor_calculation(dynamics_data, array_initial)
+            if not obj_attractor in l_attractors:
+                l_attractors.append(obj_attractor)
+                li_count_new_att.append(i_count)
+                print("new attractor discovered! at ",i_count,"th calculation")
+    
+    li_count_new_att.pop(0)#deletion initial 0 value
+    return l_attractors, li_count_new_att
+    
     
 class Object_state_saving_integer_form:
     def __init__(self, dynamics_data):
@@ -266,7 +319,7 @@ class Object_state_saving_integer_form:
         
     def _integer_to_state(self, i_state):
         """i_state is integer form of state of only changable nodes"""
-        array_changing_states = np.array(list(("{:>0%d}" %self.dynamics_data.show_number_of_changale_nodes()).format(bin(i_state)[2:])), dtype=int)
+        array_changing_states = np.array(list(("{:>0%d}" %self.dynamics_data.show_number_of_changale_nodes()).format(bin(i_state)[2:])), dtype=np.int64)
         array_all = np.matmul(array_changing_states, self.matrix_converter_chagable_to_all) + self.array_not_changed_state
         return array_all
     
@@ -297,7 +350,7 @@ class Object_state_saving_integer_form:
         for i in l_index_no_change:
             l_tmp.insert(i, 0)
         
-        self.array_converter_state_to_integer = np.array(l_tmp, dtype=int)
+        self.array_converter_state_to_integer = np.array(l_tmp, dtype=np.int64)
     
     def _matrix_converter_from_changable_to_all_state(self):
         """when ls_not_inputnodenames = [a,b,c,d,e,f], and dic_s_nodename_i_perturbedstate = {b:0, e:1}
@@ -318,7 +371,7 @@ class Object_state_saving_integer_form:
             l_index_perturbed.append(l_order_nodenames.index(s_node))
         l_index_no_change = l_index_inputs+l_index_perturbed
         
-        matrix_converter = np.array([[0]*len(l_order_nodenames)]*i_num_changing_nodes, dtype=int)
+        matrix_converter = np.array([[0]*len(l_order_nodenames)]*i_num_changing_nodes, dtype=np.int64)
         i_row = 0
         for i_column in range(len(l_order_nodenames)):
             if i_column not in l_index_no_change:
@@ -338,7 +391,7 @@ class Object_state_saving_integer_form:
         for s_perturbed in dic_perturbed_state.keys():
             l_tmp[l_order_nodenames.index(s_perturbed)] = dic_perturbed_state[s_perturbed]
         
-        self.array_not_changed_state = np.array(l_tmp, dtype=int)
+        self.array_not_changed_state = np.array(l_tmp, dtype=np.int64)
         
     def show_nodename_order(self):
         return self.dynamics_data.show_nodename_order()

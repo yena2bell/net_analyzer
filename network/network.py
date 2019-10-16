@@ -273,6 +273,23 @@ class Network_model:
                                                                                                             i_initial_random_seed)
         return l_array_attractor
     
+    def get_attractors_from_random_initial_iteratively(self,
+                                                       dic_input_state,
+                                                       dic_perturbed_state={}, 
+                                                       i_maximum_interval_without_new_att=10000, 
+                                                       i_maximum_calculation=None,
+                                                       i_random_seed=None):
+
+        l_attractors, li_count_found = Boolean_simulation.attractors_calculation_from_ramdom_initial_states_iteratively(self,
+                                                                                                                        dic_input_state,
+                                                                                                                        dic_perturbed_state,
+                                                                                                                        i_maximum_interval_without_new_att,
+                                                                                                                        i_maximum_calculation,
+                                                                                                                        i_random_seed)
+        #need some code. 
+        #using li_count_found, show graph of attractor discovery fequency
+        return l_attractors
+    
     def find_FVS(self):
         ll_FVS = FVS_analysis.FVS_finding(self.show_nodenames(), self.show_links_list_of_tuple())
         return ll_FVS
