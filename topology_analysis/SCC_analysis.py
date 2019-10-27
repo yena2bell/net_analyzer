@@ -36,7 +36,7 @@ def evaluate_SCC_inclusion(l_t_cycles,t_newcycle):
 
 
 
-def find_SCC_under_startnode(s_node_start, l_remained_nodes, dic_startnode_setlinks):
+def find_SCC_under_startnode_old(s_node_start, l_remained_nodes, dic_startnode_setlinks):
     """
     sub function of 'decompose_SCC'
     nodes data = [node name1, node name2, ..... node name k]
@@ -82,6 +82,62 @@ def find_SCC_under_startnode(s_node_start, l_remained_nodes, dic_startnode_setli
             l_node_flow.append(s_node_next)
             l_remained_nodes.pop(l_remained_nodes.index(s_node_next))
             s_node_start = s_node_next
+        
+    return ll_SCC
+
+
+def find_SCC_under_startnode(s_node_start, l_remained_nodes, dic_startnode_setlinks):
+    """
+    sub function of 'decompose_SCC'
+    nodes data = [node name1, node name2, ..... node name k]
+    remained nodes set don't contain start node
+    dic_startnode_setlinks has node name as key and set containing edges starting that node as value
+    SCC is the form of [node1,node2,,,]
+    """
+    # get idea of upgrading code from https://github.com/qpwo/python-simple-cycles/blob/master/johnson.py
+    # that codes uses Tarjan's algorithm for finding SCC's
+    # Robert Tarjan. "Depth-first search and linear graph algorithms." SIAM journal on computing. 1972.
+
+    l_node_flow = [s_node_start]
+    ll_SCC = []
+    i_index = 0
+    i_position = 0
+    dic_node_index = {s_node_start:i_index} #position of node in l_node_flow
+    dic_node_lowlink = {s_node_start:i_index} #{'a':i} : i is the loweset position of node in l_node_flow among nodes connected to 'a' node.
+    
+
+    while l_node_flow:
+        #print("\ntest2",len(l_node_flow))
+        #time.sleep(0.5)
+        #for node_test in l_node_flow:
+        #    print(node_test.output_name(), end = ',')
+        
+        if not dic_startnode_setlinks[s_node_start]:#dic_startnode_setlinks[s_node_start] is empty set
+            if dic_node_index[s_node_start] == dic_node_lowlink[s_node_start]:#it means that s_node_start has no link to node with smaller index
+                ll_SCC.append(l_node_flow[i_position:])
+                l_node_flow = l_node_flow[:i_position]
+                if l_node_flow:
+                    s_node_start = l_node_flow[-1]
+                    i_position = len(l_node_flow)-1
+            else:
+                i_lowlink = dic_node_lowlink[s_node_start]
+                s_node_start = l_node_flow[i_position-1]
+                i_position -= 1
+                dic_node_lowlink[s_node_start] = min(dic_node_lowlink[s_node_start], i_lowlink)            
+            
+        else:
+            t_link_selected = dic_startnode_setlinks[s_node_start].pop()
+            s_node_next = t_link_selected[1]
+            if s_node_next in l_node_flow:
+                dic_node_lowlink[s_node_start] = min(dic_node_lowlink[s_node_start], dic_node_index[s_node_next])
+            elif s_node_next in l_remained_nodes:
+                i_index += 1
+                l_node_flow.append(s_node_next)
+                dic_node_index[s_node_next] = i_index
+                dic_node_lowlink[s_node_next] = i_index
+                l_remained_nodes.pop(l_remained_nodes.index(s_node_next))
+                s_node_start = s_node_next
+                i_position = len(l_node_flow)-1
         
     return ll_SCC
 
