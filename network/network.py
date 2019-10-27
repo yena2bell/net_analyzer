@@ -398,3 +398,10 @@ class Expanded_network(Network_model):
     
     def show_composite_nodes(self):
         return self.l_nodes_composite
+    
+    def make_subnetwork(self, l_nodes_subnetwork):
+        lt_links_sub = basic_topology_functions.extract_subnet_topology(self.show_links_list_of_tuple(), l_nodes_subnetwork)
+        net_sub = Expanded_network("subnet_of_"+str(self))
+        net_sub.add_nodes_edges_from_list_form(l_nodes_subnetwork, lt_links_sub)
+
+        return net_sub
