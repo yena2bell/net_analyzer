@@ -6,6 +6,7 @@ Created on Thu Aug 29 17:14:06 2019
 """
 import os
 import pickle
+import time
 
 print(__name__)
 from .node import Node, Expanded_node
@@ -300,7 +301,15 @@ class Network_model:
             pickle.dump(self, file_pickle)
             
     def find_all_feedbacks(self):
-        ll_feedbacks = feedback_analysis.find_all_feedback(self.show_nodenames(), self.show_links_list_of_tuple(False))
+        t = time.time()
+        ll_feedbacks = feedback_analysis.find_all_feedbacks_Johnson(self.show_nodenames(), self.show_links_list_of_tuple(False))
+        print(time.time()-t)
+        return ll_feedbacks
+    
+    def find_all_feedbacks_tarjan(self):
+        t = time.time()
+        ll_feedbacks = feedback_analysis.find_all_feedbacks_Tarjan(self.show_nodenames(), self.show_links_list_of_tuple(False))
+        print(time.time()-t)
         return ll_feedbacks
     
     def find_feedback_cutting_nodes(self):

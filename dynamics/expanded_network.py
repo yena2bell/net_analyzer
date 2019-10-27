@@ -8,7 +8,7 @@ Created on Thu Aug 29 21:04:25 2019
 
 
 from .Boolean_functions import get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_truthtable as get_min_Boolean_eq
-from ..topology_analysis.feedback_analysis import find_all_feedback
+from ..topology_analysis.feedback_analysis import find_all_feedbacks_Johnson
 from ..topology_analysis.FVS_analysis import conversion_of_combination_num_to_list_of_comb
 from ..support_functions.combination_functions import calculate_next_combination
 
@@ -127,7 +127,7 @@ def find_stable_motifs_using_expanded_net(expanded_network):
     ls_nodenames = expanded_network.show_nodenames()
     lt_links = expanded_network.show_links_list_of_tuple()
     ll_stable_motif = []
-    ll_feedbacks = find_all_feedback(ls_nodenames, lt_links)
+    ll_feedbacks = find_all_feedbacks_Johnson(ls_nodenames, lt_links)
     print("the number of feedbacks in expanded network is ", len(ll_feedbacks))
     
     s_suffix_of_on_node = expanded_network.show_suffix_on()

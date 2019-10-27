@@ -5,6 +5,8 @@ Created on Thu Apr 11 19:31:21 2019
 @author: jwKim
 """
 import itertools
+from collections import defaultdict
+import numpy as np
 from . import FVS_analysis, SCC_analysis, basic_topology_functions
 
 def find_all_downstream_from_seed(lt_links, s_seed, ls_ends=[], b_downstream_ended_only_ls_ends=False):
@@ -111,7 +113,7 @@ def find_all_feedback_from_FVS(lt_links, ls_FVS=None):
     return llt_feedbacks
 
 
-def find_all_feedback(ls_nodenames, lt_links):
+def find_all_feedbacks_Tarjan(ls_nodenames, lt_links):
     """lt_links have element of (startnodename, endnodename)
     use tarjan algorithm in each decomposed SCC"""
     
@@ -161,6 +163,89 @@ def find_all_feedback(ls_nodenames, lt_links):
     
     return ll_feedbacks
 
-        
+def find_all_feedbacks_Johnson(ls_nodenames, lt_links):
+    ll_SCC = SCC_analysis.decompose_SCC(ls_nodenames, lt_links)
+    lli_feedbacks = []
+    ll_feedbacks = []
     
+    def _unblock(i, 
+                 dic_blocked_link, 
+                 array_blocked):        
+        if array_blocked[i]:#i is blocked:
+            array_blocked[i] = False
+        if dic_blocked_link[i]:
+            for j in list(dic_blocked_link[i]):
+                dic_blocked_link[i].discard(j)
+                _unblock(j, dic_blocked_link, array_blocked)
+    
+    for l_SCC in ll_SCC:
+        for i in range(len(l_SCC)):
+            ls_nodes_refined = l_SCC.copy()[i:]
+            lt_links_refined = basic_topology_functions.extract_subnet_topology(lt_links, ls_nodes_refined)
+            if i >= 1:
+                ll_SCC_in_SCC =  SCC_analysis.decompose_SCC(ls_nodes_refined, lt_links_refined)
+                for l_SCC_in_SCC in ll_SCC_in_SCC:
+                    if l_SCC[i] in l_SCC_in_SCC:
+                        ls_nodes_refined = l_SCC_in_SCC
+                        ls_nodes_refined = [l_SCC[i]] + ls_nodes_refined[:ls_nodes_refined.index(l_SCC[i])]+ls_nodes_refined[ls_nodes_refined.index(l_SCC[i])+1:]
+                        lt_links_refined = basic_topology_functions.extract_subnet_topology(lt_links_refined, ls_nodes_refined)
+                        break
+            #get SCC from nodes of l_SCC[i:] which contains l_SCC[i]
+            if len(ls_nodes_refined) == 1:
+                if lt_links_refined: #SCC with one node and self loop
+                    ll_feedbacks.append([ls_nodes_refined[0]])
+                continue
+            
+            dic_istart_liends = defaultdict(list)
+            for t_link in lt_links_refined:
+                i_start= ls_nodes_refined.index(t_link[0])
+                i_end = ls_nodes_refined.index(t_link[-1])
+                dic_istart_liends[i_start].append(i_end)
+            for i_key, li_ends in dic_istart_liends.items():
+                dic_istart_liends[i_key] = list(set(li_ends))
+            dic_istart_icount = {i_key:len(l_links)-1 for i_key,l_links in dic_istart_liends.items()}
+            
+            array_blocked = np.zeros_like(ls_nodes_refined, dtype=bool)
+            dic_blocked_link = defaultdict(set)#if dic_blocked_link[i] contains j, then j->i link is blocked
+            l_flow = []
+            l_connectable_to_0 = []#has same length to l_flow. if l_connectable_to_0[i] = True: l_flow[:i+1] can reach to 0(root node)
+            
+            i_node = 0
+            l_flow.append(i_node)
+            l_connectable_to_0.append(False)
+            array_blocked[i_node] = True
+            while l_flow:
+                i_next_edge = dic_istart_icount[i_node]
+                if i_next_edge >= 0:
+                    j_node = dic_istart_liends[i_node][i_next_edge]
+                    dic_istart_icount[i_node] -= 1
+                    if j_node == 0:
+                        l_connectable_to_0[-1] = True
+                        lli_feedbacks.append(l_flow.copy())
+                    elif not array_blocked[j_node]:
+                        i_node = j_node
+                        l_flow.append(i_node)
+                        l_connectable_to_0.append(False)
+                        array_blocked[i_node] = True
+                else:
+                    i_end = l_flow.pop(-1)
+                    b_end = l_connectable_to_0.pop(-1)
+                    if l_flow:
+                        dic_istart_icount[i_end] = len(dic_istart_liends[i_end])-1
+                        if b_end:
+                            _unblock(i_end, dic_blocked_link, array_blocked)
+                            l_connectable_to_0[-1] = True
+                        else:
+                            for j in dic_istart_liends[i_end]:
+                                dic_blocked_link[j].add(i_end)
+                        i_node = l_flow[-1]
+            
+            while lli_feedbacks:
+                li_feedback = lli_feedbacks.pop()
+                ll_feedbacks.append([ls_nodes_refined[i] for i in li_feedback])
+    
+
+        
+    return ll_feedbacks
+
     
