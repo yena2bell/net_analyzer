@@ -222,6 +222,7 @@ class Network_model:
         
     def make_expanded_network(self):#not yet completed
         networkmodel_expanded = Expanded_network("expanded_network_of_"+str(self))
+        networkmodel_expanded.set_original_network(self)
         expanded_network.make_expanded_network_using_Boolean_truthtable(self, networkmodel_expanded)
         if self.s_address_net_folder == "Not yet maden":
             pass
@@ -229,10 +230,10 @@ class Network_model:
             networkmodel_expanded.make_network_folder(self.s_address_net_folder)
         return networkmodel_expanded
     
-    def make_subnetwork(self, l_nodes_subnetwork):
-        lt_links_sub = basic_topology_functions.extract_subnet_topology(self.show_links_list_of_tuple(), l_nodes_subnetwork)
+    def make_subnetwork(self, l_nodenames_subnetwork):
+        lt_links_sub = basic_topology_functions.extract_subnet_topology(self.show_links_list_of_tuple(), l_nodenames_subnetwork)
         net_sub = Network_model("subnet_of_"+str(self))
-        net_sub.add_nodes_edges_from_list_form(l_nodes_subnetwork, lt_links_sub)
+        net_sub.add_nodes_edges_from_list_form(l_nodenames_subnetwork, lt_links_sub)
 
         return net_sub
 
@@ -329,10 +330,23 @@ class Expanded_network(Network_model):
         self.l_nodes_single = []
         self.l_nodes_composite = []
         
+        self.net_original = None
+        
+    def set_original_network(self, net_original):
+        self.net_original = net_original
+        
+    def show_original_network(self):
+        return self.net_original
+        
     def find_stable_motifs_using_expanded_net(self):
         ll_stable_motifs = expanded_network.find_stable_motifs_using_expanded_net(self)
         
         return ll_stable_motifs
+    
+    def find_stable_motifs_using_prime_implicants(self, i_min_size=1, i_max_size=None):
+        l_stable_motifs_known, l_nodenames_original = expanded_network.find_stable_motifs_using_prime_implicants(self, i_min_size,i_max_size)
+        
+        return l_stable_motifs_known, l_nodenames_original
     
     def show_suffix_on(self):
         return self.s_suffix_of_on_node
@@ -407,6 +421,9 @@ class Expanded_network(Network_model):
     
     def show_composite_nodes(self):
         return self.l_nodes_composite
+    
+    def show_original_nodenames(self):
+        return self.net_original.show_nodenames()        
     
     def make_subnetwork(self, l_nodes_subnetwork):
         lt_links_sub = basic_topology_functions.extract_subnet_topology(self.show_links_list_of_tuple(), l_nodes_subnetwork)

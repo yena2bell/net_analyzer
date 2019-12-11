@@ -5,12 +5,15 @@ Created on Thu Aug 29 21:04:25 2019
 @author: jwKim
 """
 
-
+import numpy as np
+import time
 
 from .Boolean_functions import get_minimized_Boolean_logic_equation_using_Quine_McCluskey_algorithm_from_truthtable as get_min_Boolean_eq
 from ..topology_analysis.feedback_analysis import find_all_feedbacks_Johnson
 from ..topology_analysis.FVS_analysis import conversion_of_combination_num_to_list_of_comb
-from ..support_functions.combination_functions import calculate_next_combination
+#from ..support_functions.combination_functions import calculate_next_combination
+from ..support_functions import combination_functions
+from . import dynamics_supporting_module
 
 def make_expanded_network_using_Boolean_truthtable(networkmodel, networkmodel_expanded):
     for s_nodename in networkmodel.show_nodenames():
@@ -186,7 +189,7 @@ def find_stable_motifs_using_expanded_net(expanded_network):
         l_combination = conversion_of_combination_num_to_list_of_comb(i_combination,0)
         for l_combination_stablemotif in ll_stable_motif_combinations:
             if l_combination_stablemotif in l_combination:
-                i_combination = calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
+                i_combination = combination_functions.calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
                 break
             #if new combination already contains stable motif found, through that combination
         else:  
@@ -203,14 +206,14 @@ def find_stable_motifs_using_expanded_net(expanded_network):
                     set_nodes_in_andnode_combination.add(s_node)
             
             if not check_contradict_state_of_same_node_in_feedback(list(set_nodes_in_andnode_combination.union(set_candidate_of_stablemotif))):
-                i_combination = calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
+                i_combination = combination_functions.calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
                 continue
             
             if set_nodes_in_andnode_combination.issubset(set_candidate_of_stablemotif):
                 ll_stable_motif_combinations.append(l_combination)
                 lset_stable_motif_contatining_andnodes.append(set_candidate_of_stablemotif)
             
-            i_combination = calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
+            i_combination = combination_functions.calculate_next_combination(i_combination, len(lset_feedbacks_filtered_l_andnodes))
         
     
     #check whether stable module containing and node is superset of stable motif without andnode
@@ -229,6 +232,152 @@ def find_stable_motifs_using_expanded_net(expanded_network):
                 ll_stable_motif_containing_andnode.pop(j)
         
     return ll_stable_motif+ll_stable_motif_containing_andnode
+
+def find_stable_motifs_using_prime_implicants(expanded_network, min_size=1, max_size=None):#similar principle to maximal trap space finding
+    obj_prime_implicants = Prime_implicants(expanded_network)
+    net_original = expanded_network.show_original_network()
+    l_nodenames_original = net_original.show_nodenames()
+    if max_size == None:
+        max_size = len(net_original.show_nodenames())
+    
+    l_stable_motifs_known = []
+    for i_size in range(min_size, max_size+1):
+        print(i_size," size stable motifs are now calculating")
+        f_start_time = time.time()
+        for i_comb in combination_functions.generator_combination_num_in_defined_1(len(net_original.show_nodenames()), i_size):
+            array_nodes_selected = np.nonzero(list(reversed([int(s) for s in bin(i_comb)[2:]])))[0]
+            l_nodenames_subnet = [l_nodenames_original[i] for i in array_nodes_selected]
+            net_sub = net_original.make_subnetwork(l_nodenames_subnet)
+            dic_code_lSCC, lt_SCC_hierarchy = net_sub.show_SCC_decomposition()
+            if len(dic_code_lSCC) >=2:
+                #print(l_nodenames_subnet, "is not SCC")
+                continue
+            else:
+                for i_state in range(pow(2,i_size)):
+                    array_state = dynamics_supporting_module.int_to_arraystate(i_state, i_size)
+                    array_state = (array_state*2)-1#1->1, 0->-1
+                    array_state.dtype = int
+                    array_state_full = np.zeros((len(l_nodenames_original),),dtype=int)
+                    array_state_full[array_nodes_selected] = array_state
+                    stable_motif_candidate = Stable_motif(array_state_full)
+                    if stable_motif_candidate.check_containment_smalelr_SMs(l_stable_motifs_known):
+                        continue
+                    else:
+                        if obj_prime_implicants.check_stable_motif(stable_motif_candidate):
+                            l_stable_motifs_known.append(stable_motif_candidate)
         
+        print(i_size," size stable motifs finding ended")
+        print("it takes ",time.time()-f_start_time)
+    
+    return l_stable_motifs_known, l_nodenames_original
+    
+class Prime_implicants:
+    def __init__(self, expanded_net):
+        self.l_ordered_nodenames = expanded_net.show_original_nodenames()
+        self.matrix_prime_implicants = None
+        self.dict_node_array_position_of_prime_implicants = {}
+        
+        self.calculate_prime_implicants(expanded_net)
+        
+        #self.matrix_1or0 = self.matrix_prime_implicants * self.matrix_prime_implicants#componenetwise multiplication
+        self.array_num_of_nonzero_in_prime_implicants = np.array([np.count_nonzero(row) for row in self.matrix_prime_implicants])
+        
+    
+    def calculate_prime_implicants(self, expanded_network):
+        i_counter = 0
+        l_prime_implicants = []#elements are expanded node
+        l_suffixs = [expanded_network.show_suffix_off(), expanded_network.show_suffix_on()]
+        dict_name_value_array_positions = {}
+        for i_index in range(len(self.l_ordered_nodenames)):
+            #print(i_index)
+            for i_value, s_suffix in enumerate(l_suffixs):
+                #print(s_suffix)
+                expanded_node = expanded_network.select_node(self.l_ordered_nodenames[i_index]+s_suffix)
+                l_regulator_expanded_nodes = expanded_node.show_regulator_nodes()
+                if not l_regulator_expanded_nodes:#maybe input node
+                    l_regulator_expanded_nodes = [expanded_node]
+                #print(l_regulator_expanded_nodes)
+                l_prime_implicants.extend(l_regulator_expanded_nodes)
+                dict_name_value_array_positions[(i_index, 2*i_value-1)] = (i_counter, i_counter + len(l_regulator_expanded_nodes))
+                i_counter += len(l_regulator_expanded_nodes)
+        
+        self.matrix_prime_implicants = np.zeros((len(l_prime_implicants), len(self.l_ordered_nodenames)), dtype=int)
+        #print(l_prime_implicants)
+    
+        for key in dict_name_value_array_positions.keys():
+            t_position = dict_name_value_array_positions[key]
+            array_positions = np.zeros((len(l_prime_implicants),), dtype=bool)
+            array_positions[t_position[0]:t_position[1]] = 1
+            array_positions.shape = (1,len(array_positions))
+            self.dict_node_array_position_of_prime_implicants[key]= array_positions
+        #print(self.dict_node_array_position_of_prime_implicants)
+        
+        for i, exp_node_prime_implicant in enumerate(l_prime_implicants):
+            if exp_node_prime_implicant.is_composite_node():
+                l_s_expandednode_component = exp_node_prime_implicant.show_list_of_elements_in_composite()
+                for s_expandendnode in l_s_expandednode_component:
+                    expanded_node = expanded_network.select_node(s_expandendnode)
+                    i_position = self.l_ordered_nodenames.index(expanded_node.show_original_name())
+                    if expanded_node.is_on_state_node():
+                        self.matrix_prime_implicants[i][i_position] = 1
+                    else:
+                        self.matrix_prime_implicants[i][i_position] = -1
+            else:#single node
+                i_position = self.l_ordered_nodenames.index(exp_node_prime_implicant.show_original_name())
+                if exp_node_prime_implicant.is_on_state_node():
+                    self.matrix_prime_implicants[i][i_position] = 1
+                else:
+                    self.matrix_prime_implicants[i][i_position] = -1
+        
+        #print(self.matrix_prime_implicants)
+    
+    def check_stable_motif(self, stable_motif):
+        array_state_SM = stable_motif.show_array_state()
+        #print(array_state_SM)
+        
+        lt_node_state_of_SM = [(i_index, array_state_SM[i_index]) for i_index in np.nonzero(array_state_SM)[0]]
+        #print(lt_node_state_of_SM)
+        matrix_filter = np.concatenate([self.dict_node_array_position_of_prime_implicants[t_key] for t_key in lt_node_state_of_SM], axis=0)
+        #print(matrix_filter)
+        #print(np.matmul(self.matrix_prime_implicants, array_state_SM))
+        #array_check_result = ((np.matmul(self.matrix_prime_implicants, array_state_SM) - np.matmul(self.matrix_1or0, array_1or0)) == 0)
+        array_check_result = ((np.matmul(self.matrix_prime_implicants, array_state_SM) - self.array_num_of_nonzero_in_prime_implicants) == 0)
+        #print(array_check_result)
+        if (np.matmul(matrix_filter, array_check_result)).all():
+            return True
+        else:
+            return False
+        
+        
+class Stable_motif:
+    def __init__(self, array_state):
+        self.array_state = array_state # 1 means on, -1 means off, 0 means irrelevant to this stable motif
+        self.array_state_1or0 = array_state*array_state
+    
+    def check_containment_smalelr_SMs(self, l_stable_motifs_known):
+        for stable_motif in l_stable_motifs_known:
+            if self.check_containment_smaller_SM(stable_motif):
+                return True #this state is not stable motif(not minimal motif)
+        return False
+            
+    def check_containment_smaller_SM(self, stable_motif_known):
+        i_num_nodes = self.show_num_of_nodes_in_SM()
+        i_num_nodes_known = stable_motif_known.show_num_of_nodes_in_SM()
+        if i_num_nodes_known >= i_num_nodes:
+            return False
+        if np.dot(stable_motif_known.show_array_state(), self.array_state) == i_num_nodes_known:
+            return True
+        else: return False
+            
+    def show_array_state(self):
+        return self.array_state
+    
+    def show_num_of_nodes_in_SM(self):
+        return np.count_nonzero(self.array_state)
+    
+    def check_prime_implicants(self, dict_prime_implicants):
+        for i_index in np.nonzero(self.array_state)[0]:
+            t_index_state = (i_index, self.array[i_index])
+            np.multiply(dict_prime_implicants[t_index_state], self.array_state)
     
 
